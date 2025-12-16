@@ -1,3 +1,7 @@
+# Environment variables (IMPORTANT)
+.env
+.env.*
+Bac
 # Logs
 logs
 *.log
