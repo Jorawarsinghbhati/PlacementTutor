@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { apiConnector } from "../Service/apiConnector";
-import { authEndpoints } from "../Service/apis";
+import { apiConnector } from "../../Service/apiConnector";
+import { authEndpoints } from "../../Service/apis";
 import { useNavigate } from "react-router-dom";
 
 const Login = () => {

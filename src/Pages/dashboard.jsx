@@ -1,12 +1,27 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    // 🔴 Remove auth data
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
+    // 🔴 Redirect to login
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Navbar */}
       <nav className="bg-gray-800 px-6 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">PlacementTutor</h1>
-        <button className="bg-red-500 px-4 py-1 rounded">
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 px-4 py-1 rounded hover:bg-red-600"
+        >
           Logout
         </button>
       </nav>

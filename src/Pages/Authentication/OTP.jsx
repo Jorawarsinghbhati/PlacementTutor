@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { apiConnector } from "../Service/apiConnector";
-import { authEndpoints } from "../Service/apis";
+import { apiConnector } from "../../Service/apiConnector";
+import { authEndpoints } from "../../Service/apis";
 
 const Otp = () => {
   const [otp, setOtp] = useState("");
@@ -18,7 +18,7 @@ const Otp = () => {
         otp,
       });
       localStorage.setItem("token", res.data.token);
-      navigate("/dashboard");
+      navigate("/set-username");
     } catch (e) {
       console.error(e);
     } finally {

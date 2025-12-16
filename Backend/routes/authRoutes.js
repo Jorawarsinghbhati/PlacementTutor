@@ -1,16 +1,15 @@
 import { Router } from "express";
 import passport from "passport";
-import {
-  sendOtp,
-  verifyOtp,
-} from "../controllers/otpController.js";
+import jwt from "jsonwebtoken";
+
+import { sendOtp, verifyOtp } from "../controllers/otpController.js";
+import { setUsername, setGraduation } from "../controllers/userController.js";
+import auth from "../middlewares/auth.js";
+import { getMe } from "../controllers/userController.js";
 
 const router = Router();
 
-/**
- * ✅ 1. THIS ROUTE IS CALLED BY AXIOS (apiConnector)
- * Frontend hits: GET /auth/google/url
- */
+
 router.get("/google/url", (req, res) => {
   res.json({
     success: true,
@@ -18,10 +17,7 @@ router.get("/google/url", (req, res) => {
   });
 });
 
-/**
- * ✅ 2. GOOGLE OAUTH START (browser redirect)
- * Frontend NEVER calls this via axios directly
- */
+
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -29,19 +25,38 @@ router.get(
   })
 );
 
-/**
- * ✅ 3. GOOGLE CALLBACK
- */
+
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
   (req, res) => {
+    const user = req.user;
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    const step = !user.username
+      ? "USERNAME"
+      : !user.college
+      ? "GRADUATION"
+      : "DONE";
+
     res.redirect(
-      `${process.env.CLIENT_URL}/oauth-success?token=${req.user.jwtToken}`
+      `${process.env.CLIENT_URL}/oauth-success?token=${token}&step=${step}`
     );
   }
 );
+
+
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
+
+
+router.post("/set-username", auth, setUsername);
+router.post("/set-graduation", auth, setGraduation);
+router.get("/me", auth, getMe);
 
 export default router;
