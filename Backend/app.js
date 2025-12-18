@@ -6,19 +6,18 @@ import "./config/passport.js";
 import authRoutes from "./routes/authRoutes.js";
 import connectDB from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import mentorRoutes from "./routes/mentorRoutes.js";
 connectDB();
 const app = express();
 app.use(
-    cors({
+  cors({
       origin: process.env.CLIENT_URL, // 👈 exact frontend URL
       credentials: true,
-    })
-  );
-  
+  })
+);
 app.use(express.json());
 app.use(passport.initialize());
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
-
-
+app.use("/mentor", mentorRoutes);
 export default app;

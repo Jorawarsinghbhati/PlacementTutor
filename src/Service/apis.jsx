@@ -11,13 +11,19 @@ export const authEndpoints = {
   SET_GRADUATION: `${BASE_URL}/auth/set-graduation`,
 };
 export const adminEndpoints = {
-    ADMIN_STATS: `${BASE_URL}/admin/stats`,
-    // future:
-    // GET_USERS: `${BASE_URL}/admin/users`,
-    // UPDATE_ROLE: `${BASE_URL}/admin/user/:id/role`,
-  };
+  ADMIN_STATS: `${BASE_URL}/admin/stats`,
+  PENDING_MENTORS: `${BASE_URL}/admin/mentors/pending`,
+  APPROVE_MENTOR: (id) => `${BASE_URL}/admin/mentors/${id}/approve`,
+  REJECT_MENTOR: (id) => `${BASE_URL}/admin/mentors/${id}/reject`,
+};
+
 
 export const passwordEndpoints = {
   PASSWORDTOKEN_API: `${BASE_URL}/password/passwordtoken`,
   RESETPASSWORD_API: `${BASE_URL}/password/resetpassword`,
 };
+export const mentorEndpoints = {
+  APPLY_MENTOR: `${BASE_URL}/mentor/apply`,
+  MY_MENTOR_STATUS: `${BASE_URL}/mentor/status`,
+};
+

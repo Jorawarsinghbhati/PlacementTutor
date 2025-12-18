@@ -6,21 +6,56 @@ import { authEndpoints } from "../../Service/apis";
 const Otp = () => {
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
   const { state } = useLocation();
   const email = state?.email;
 
   const verifyOtp = async () => {
+    if (!email) {
+      navigate("/", { replace: true });
+      return;
+    }
+
     try {
       setLoading(true);
+
+      // 🔹 Verify OTP
       const res = await apiConnector("POST", authEndpoints.VERIFY_OTP, {
         email,
         otp,
       });
-      localStorage.setItem("token", res.data.token);
-      navigate("/set-username");
+
+      const token = res.data.token;
+      localStorage.setItem("token", token);
+
+      // 🔹 Fetch user info
+      const meRes = await apiConnector("GET", authEndpoints.ME);
+      const user = meRes.data.user;
+
+      // 🔹 Store role
+      localStorage.setItem("role", user.role);
+
+      const role = user.role?.trim().toUpperCase();
+
+      // 🛡 ADMIN
+      if (role === "ADMIN") {
+        navigate("/admin", { replace: true });
+        return;
+      }
+
+      // 🧑‍🏫 APPROVED MENTOR
+      if (role === "MENTOR") {
+        navigate("/mentor/dashboard", { replace: true });
+        return;
+      }
+
+      // 👤 NORMAL USER → choose path
+      navigate("/choose-role", { replace: true });
+
     } catch (e) {
-      console.error(e);
+      console.error("OTP verification error:", e);
+      alert("Invalid OTP");
     } finally {
       setLoading(false);
     }
@@ -45,7 +80,7 @@ const Otp = () => {
           disabled={loading}
           className="w-full bg-white py-2 rounded"
         >
-          Verify OTP
+          {loading ? "Verifying..." : "Verify OTP"}
         </button>
       </div>
     </div>

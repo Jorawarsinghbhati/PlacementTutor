@@ -2,6 +2,7 @@ import User from "../models/User.js";
 
 export const getAdminStats = async (req, res) => {
   try {
+    console.log("Fetching admin stats");
     // Total users
     const totalUsers = await User.countDocuments();
 

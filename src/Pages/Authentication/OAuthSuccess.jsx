@@ -16,34 +16,35 @@ const OAuthSuccess = () => {
         return;
       }
 
-      // 🔹 Save token
+      // 🔹 Save JWT
       localStorage.setItem("token", token);
 
       try {
-        // 🔹 Get user info
+        // 🔹 Fetch logged-in user
         const res = await apiConnector("GET", authEndpoints.ME);
         const user = res.data.user;
-        console.log(user.role);
-        // 🔹 ADMIN
-        if (user.role?.trim().toUpperCase() === "ADMIN") {
-          localStorage.setItem("role",user.role);
+
+        // 🔹 Save role for route guards
+        localStorage.setItem("role", user.role);
+
+        const role = user.role?.trim().toUpperCase();
+
+        // 🛡 ADMIN → admin dashboard
+        if (role === "ADMIN") {
           navigate("/admin", { replace: true });
           return;
         }
 
-        // 🔹 Onboarding flow
-        if (!user.username) {
-          navigate("/set-username", { replace: true });
+        // 🧑‍🏫 APPROVED MENTOR → mentor dashboard
+        if (role === "MENTOR") {
+          navigate("/mentor/dashboard", { replace: true });
           return;
         }
 
-        if (!user.college) {
-          navigate("/graduation", { replace: true });
-          return;
-        }
+        // 👤 NORMAL USER → choose how to continue
+        // (User or Mentor path)
+        navigate("/choose-role", { replace: true });
 
-        // 🔹 Fully onboarded user
-        navigate("/dashboard", { replace: true });
       } catch (err) {
         console.error("OAuth redirect error:", err);
         navigate("/", { replace: true });
@@ -51,7 +52,7 @@ const OAuthSuccess = () => {
     };
 
     handleRedirect();
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
