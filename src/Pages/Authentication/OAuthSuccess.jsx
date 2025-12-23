@@ -40,9 +40,13 @@ const OAuthSuccess = () => {
           navigate("/mentor/dashboard", { replace: true });
           return;
         }
+        if(user.college && user.graduationYear){
+          navigate("/dashboard",{ replace: true });
+          return;
+        }
 
         // 👤 NORMAL USER → choose how to continue
-        // (User or Mentor path)
+        // (User or Mentor path).....
         navigate("/choose-role", { replace: true });
 
       } catch (err) {

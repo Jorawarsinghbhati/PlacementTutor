@@ -7,6 +7,9 @@ import authRoutes from "./routes/authRoutes.js";
 import connectDB from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import mentorRoutes from "./routes/mentorRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import userpaymentroutes from "./routes/userpaymentroutes.js";
 connectDB();
 const app = express();
 app.use(
@@ -20,4 +23,7 @@ app.use(passport.initialize());
 app.use("/auth", authRoutes);
 app.use("/admin", adminRoutes);
 app.use("/mentor", mentorRoutes);
+app.use("/booking", bookingRoutes);
+app.use("/user", userRoutes);
+app.use("/payment",userpaymentroutes);
 export default app;

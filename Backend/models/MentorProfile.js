@@ -9,7 +9,6 @@ const mentorProfileSchema = new mongoose.Schema(
       required: true,
       unique: true, // one mentor profile per user
     },
-
     // 🔹 Personal / Academic Info
     name: {
       type: String,
@@ -63,11 +62,6 @@ const mentorProfileSchema = new mongoose.Schema(
       default: "PENDING",
     },
 
-    // 🔹 Admin Feedback (optional)
-    adminNote: {
-      type: String,
-      default: "",
-    },
   },
   { timestamps: true }
 );

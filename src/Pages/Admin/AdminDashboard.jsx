@@ -1,185 +1,291 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { apiConnector } from "../../Service/apiConnector";
-import { adminEndpoints } from "../../Service/apis";
-
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Table, Button, Tag, Statistic, Progress, message } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, UserOutlined, DollarOutlined, CalendarOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { apiConnector } from "../../Service/apiConnector"; 
+import { adminEndpoints } from '../../Service/apis'; 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [pendingMentors, setPendingMentors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("DASHBOARD"); // DASHBOARD | MENTORS
+  const [dashboardStats, setDashboardStats] = useState(null);
+  const [mentorRequests, setMentorRequests] = useState([]);
+  const [loading, setLoading] = useState({
+    stats: false,
+    mentors: false
+  });
 
-  const navigate = useNavigate();
+  // Fetch Dashboard Stats
+  const fetchDashboardStats = async () => {
+    setLoading(prev => ({ ...prev, stats: true }));
+    try {
+      const response = await apiConnector(
+        "GET", 
+        adminEndpoints.ADMIN_DASHBOARD_STATS
+      );
+      const responsebabe=await apiConnector("GET",adminEndpoints.ALL_USERS_DETAILED);
+      console.log("resposebabe",responsebabe.data);
+      // const responsebaby=await apiConnector("GET",adminEndpoints.ALL_BOOKINGS_DETAILED);
+      // console.log("resposebaby",responsebaby.data);
+      console.log("Admin dashboard stats:", response.data);
+      setDashboardStats(response.data);
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+      message.error("Failed to load dashboard statistics");
+    } finally {
+      setLoading(prev => ({ ...prev, stats: false }));
+    }
+  };
+
+  // Fetch Mentor Requests
+  const fetchMentorRequests = async () => {
+    setLoading(prev => ({ ...prev, mentors: true }));
+    try {
+      const response = await apiConnector(
+        "GET", 
+        adminEndpoints.PENDING_MENTORS
+      );
+      setMentorRequests(response.data);
+    } catch (error) {
+      console.error("Error fetching mentor requests:", error);
+      message.error("Failed to load mentor requests");
+    } finally {
+      setLoading(prev => ({ ...prev, mentors: false }));
+    }
+  };
+
+  // Handle Mentor Approval/Rejection
+  const handleMentorAction = async (mentorId, action) => {
+    try {
+      const endpoint = action === 'approve' 
+        ? adminEndpoints.APPROVE_MENTOR 
+        : adminEndpoints.REJECT_MENTOR;
+      
+      await apiConnector(
+        "POST", 
+        endpoint, 
+        { mentorId }
+      );
+      
+      // Refresh mentor requests
+      fetchMentorRequests();
+      
+      // Show success message
+      message.success(`Mentor ${action}d successfully!`);
+    } catch (error) {
+      console.error(`Error ${action}ing mentor:`, error);
+      message.error(`Failed to ${action} mentor`);
+    }
+  };
 
   useEffect(() => {
-    const fetchAdminData = async () => {
-      try {
-        // 🔹 Fetch stats
-        const statsRes = await apiConnector(
-          "GET",
-          adminEndpoints.ADMIN_STATS
-        );
-        setStats(statsRes.data.stats);
-        console.log("Admin stats:", statsRes.data.stats);
-        // 🔹 Fetch pending mentor requests
-        const mentorsRes = await apiConnector(
-          "GET",
-          adminEndpoints.PENDING_MENTORS
-        );
-        setPendingMentors(mentorsRes.data.mentors || []);
-      } catch (err) {
-        console.error("Admin data error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAdminData();
+    fetchDashboardStats();
+    fetchMentorRequests();
   }, []);
 
-  const handleApprove = async (mentorId) => {
-    await apiConnector(
-      "POST",
-      adminEndpoints.APPROVE_MENTOR(mentorId)
-    );
-    setPendingMentors(prev => prev.filter(m => m._id !== mentorId));
-  };
-
-  const handleReject = async (mentorId) => {
-    await apiConnector(
-      "POST",
-      adminEndpoints.REJECT_MENTOR(mentorId)
-    );
-    setPendingMentors(prev => prev.filter(m => m._id !== mentorId));
-  };
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/", { replace: true });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-        Loading Admin Dashboard...
-      </div>
-    );
-  }
+  // Mentor Requests Table Columns
+  const mentorColumns = [
+    {
+      title: 'Mentor Name',
+      dataIndex: 'name',
+      key: 'name',
+      render: (text, record) => (
+        <div>
+          <strong>{text}</strong>
+          <div style={{ fontSize: '12px', color: '#666' }}>{record.email}</div>
+        </div>
+      ),
+    },
+    {
+      title: 'Expertise',
+      dataIndex: 'expertise',
+      key: 'expertise',
+      render: (expertise) => (
+        <Tag color="blue">{expertise}</Tag>
+      ),
+    },
+    {
+      title: 'Experience',
+      dataIndex: 'experience',
+      key: 'experience',
+      render: (exp) => `${exp} years`,
+    },
+    {
+      title: 'Applied Date',
+      dataIndex: 'appliedDate',
+      key: 'appliedDate',
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status) => (
+        <Tag color={status === 'pending' ? 'orange' : status === 'approved' ? 'green' : 'red'}>
+          {status.toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Documents',
+      key: 'documents',
+      render: (_, record) => (
+        <Button 
+          type="link" 
+          onClick={() => window.open(record.resumeUrl, '_blank')}
+        >
+          View Resume
+        </Button>
+      ),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button
+            type="primary"
+            icon={<CheckCircleOutlined />}
+            onClick={() => handleMentorAction(record.id, 'approve')}
+            disabled={record.status !== 'pending'}
+          >
+            Approve
+          </Button>
+          <Button
+            danger
+            icon={<CloseCircleOutlined />}
+            onClick={() => handleMentorAction(record.id, 'reject')}
+            disabled={record.status !== 'pending'}
+          >
+            Reject
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="flex min-h-screen">
-      {/* 🔹 Sidebar */}
-      <aside className="w-64 bg-black text-white p-6 flex flex-col justify-between">
-        <div>
-          <h2 className="text-xl font-bold mb-8">Admin Panel</h2>
-          <ul className="space-y-4 text-gray-400">
-            <li
-              onClick={() => setActiveTab("DASHBOARD")}
-              className={`cursor-pointer ${
-                activeTab === "DASHBOARD" ? "text-white" : ""
-              }`}
-            >
-              Dashboard
-            </li>
-            <li
-              onClick={() => setActiveTab("MENTORS")}
-              className={`cursor-pointer ${
-                activeTab === "MENTORS" ? "text-white" : ""
-              }`}
-            >
-              Mentor Requests
-            </li>
-          </ul>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="bg-red-600 py-2 rounded font-semibold"
-        >
-          Logout
-        </button>
-      </aside>
-
-      {/* 🔹 Main Content */}
-      <main className="flex-1 bg-gray-900 p-8 text-white">
-        {activeTab === "DASHBOARD" && (
-          <>
-            <h1 className="text-2xl font-bold mb-8">Admin Dashboard</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <StatCard title="Total Users" value={stats.totalUsers} />
-              <StatCard title="Total Mentors" value={stats.totalMentors} />
-              <StatCard title="Total Admins" value={stats.totalAdmins} />
-              <StatCard title="Total Colleges" value={stats.totalColleges} />
-              <StatCard
-                title="New Users (Last 7 Days)"
-                value={stats.newUsersLast7Days}
+    <div style={{ padding: '24px' }}>
+      <h1>Admin Dashboard</h1>
+      
+      {/* Overview Section */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2>Overview</h2>
+        {dashboardStats && (
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} lg={6}>
+              <Card loading={loading.stats}>
+                <Statistic
+                  title="Today's Bookings"
+                  value={dashboardStats.overview.todaysBookings}
+                  prefix={<CalendarOutlined />}
+                  valueStyle={{ color: '#3f8600' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card loading={loading.stats}>
+                <Statistic
+                  title="Total Bookings"
+                  value={dashboardStats.overview.totalBookings}
+                  prefix={<CalendarOutlined />}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card loading={loading.stats}>
+                <Statistic
+                  title="Total Revenue"
+                  value={dashboardStats.overview.totalRevenue}
+                  prefix={<DollarOutlined />}
+                  valueStyle={{ color: '#1890ff' }}
+                  suffix="$"
+                />
+              </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <Card loading={loading.stats}>
+                <Statistic
+                  title="Total Users"
+                  value={dashboardStats.overview.totalUsers}
+                  prefix={<UserOutlined />}
+                />
+              </Card>
+            </Col>
+          </Row>
+        )}
+        
+        {/* Popular Time Slot Card */}
+        {dashboardStats?.popularTimeSlot && (
+          <Card 
+            title="Most Popular Time Slot" 
+            style={{ marginTop: '16px' }}
+            loading={loading.stats}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <ClockCircleOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+              <div>
+                <h3 style={{ margin: 0 }}>
+                  {dashboardStats.popularTimeSlot.startTime} - {dashboardStats.popularTimeSlot.endTime}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', color: '#666' }}>
+                  {dashboardStats.popularTimeSlot.bookings} bookings this week
+                </p>
+              </div>
+              <Progress 
+                type="circle" 
+                percent={Math.min(100, dashboardStats.popularTimeSlot.bookings * 20)} 
+                width={60}
               />
             </div>
-          </>
+          </Card>
         )}
+      </div>
 
-        {activeTab === "MENTORS" && (
-          <>
-            <h1 className="text-2xl font-bold mb-6">
-              Pending Mentor Requests
-            </h1>
-
-            {pendingMentors.length === 0 ? (
-              <p className="text-gray-400">No pending requests</p>
-            ) : (
-              <div className="space-y-4">
-                {pendingMentors.map((mentor) => (
-                  <div
-                    key={mentor._id}
-                    className="bg-[#111] p-4 rounded flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="font-semibold">{mentor.name}</p>
-                      <p className="text-sm text-gray-400">
-                        {mentor.college} · {mentor.currentCompany}
-                      </p>
-                      <a
-                        href={mentor.offerLetterUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-400 text-sm underline"
-                      >
-                        View Offer Letter
-                      </a>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => handleApprove(mentor._id)}
-                        className="bg-green-600 px-4 py-1 rounded"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleReject(mentor._id)}
-                        className="bg-red-600 px-4 py-1 rounded"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+      {/* Mentor Requests Section */}
+      <div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <h2>Mentor Requests</h2>
+          <Button 
+            type="primary" 
+            onClick={fetchMentorRequests}
+            loading={loading.mentors}
+          >
+            Refresh
+          </Button>
+        </div>
+        
+        {mentorRequests.length > 0 ? (
+          <Card>
+            <Table
+              columns={mentorColumns}
+              dataSource={mentorRequests}
+              loading={loading.mentors}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              scroll={{ x: 1000 }}
+            />
+          </Card>
+        ) : (
+          <Card>
+            <div style={{ textAlign: 'center', padding: '40px' }}>
+              <CheckCircleOutlined style={{ fontSize: '48px', color: '#52c41a' }} />
+              <h3 style={{ marginTop: '16px' }}>No Pending Mentor Requests</h3>
+              <p style={{ color: '#666' }}>All mentor requests have been processed.</p>
+              <Button 
+                type="primary" 
+                onClick={fetchMentorRequests}
+                loading={loading.mentors}
+              >
+                Check Again
+              </Button>
+            </div>
+          </Card>
         )}
-      </main>
+      </div>
     </div>
   );
 };
 
-// 🔹 Reusable Card
-const StatCard = ({ title, value }) => (
-  <div className="bg-[#111] p-6 rounded-xl shadow-md">
-    <p className="text-gray-400 text-sm mb-2">{title}</p>
-    <h3 className="text-3xl font-bold">{value}</h3>
-  </div>
-);
-
 export default AdminDashboard;
-

@@ -1,5 +1,5 @@
-import MentorProfile from "../models/MentorProfile.js";
-import User from "../models/User.js";
+import MentorProfile from "../../models/MentorProfile.js";
+import User from "../../models/User.js";
 
 
 export const getPendingMentors = async (req, res) => {

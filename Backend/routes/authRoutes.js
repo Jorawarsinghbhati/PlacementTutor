@@ -2,10 +2,9 @@ import { Router } from "express";
 import passport from "passport";
 import jwt from "jsonwebtoken";
 
-import { sendOtp, verifyOtp } from "../controllers/otpController.js";
-import { setUsername, setGraduation } from "../controllers/userController.js";
+import { sendOtp, verifyOtp } from "../controllers/authcontroller/otpController.js";
 import auth from "../middlewares/auth.js";
-import { getMe } from "../controllers/userController.js";
+import { getMe ,setUsername, setGraduation } from "../controllers/authcontroller/userController.js";
 
 const router = Router();
 
