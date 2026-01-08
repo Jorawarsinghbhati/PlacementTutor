@@ -1,7 +1,1929 @@
+// // Pages/Mentor/MentorBookings.jsx
+// import { useEffect, useState } from "react";
+// import { apiConnector } from "../../Service/apiConnector";
+// import { mentorEndpoints } from "../../Service/apis";
+// import {
+//   Calendar,
+//   Clock,
+//   User,
+//   Phone,
+//   GraduationCap,
+//   CreditCard,
+//   CheckCircle,
+//   Clock as ClockIcon,
+//   ChevronRight,
+//   DollarSign,
+//   FileText,
+//   Video,
+//   CheckSquare,
+//   XCircle,
+//   AlertCircle,
+//   IndianRupee,
+// } from "lucide-react";
+
+// const MentorBookings = () => {
+//   const [upcoming, setUpcoming] = useState([]);
+//   const [completed, setCompleted] = useState([]);
+//   const [loading, setLoading] = useState({ upcoming: true, completed: true });
+//   const [error, setError] = useState(null);
+//   const [activeTab, setActiveTab] = useState("upcoming");
+
+//   useEffect(() => {
+//     const loadAllBookings = async () => {
+//       try {
+//         setLoading({ upcoming: true, completed: true });
+//         setError(null);
+
+//         // Load upcoming bookings
+//         const upcomingRes = await apiConnector(
+//           "GET",
+//           mentorEndpoints.MENTOR_BOOKINGS_UPCOMING
+//         );
+//         setUpcoming(upcomingRes.data?.bookings || []);
+//         console.log("Upcoming bookings:", upcomingRes.data?.bookings);
+//         // Load completed bookings
+//         const completedRes = await apiConnector(
+//           "GET",
+//           mentorEndpoints.MENTOR_COMPLETED_BOOKING
+//         );
+//         console.log("Completed bookings:", completedRes.data?.bookings);
+//         setCompleted(completedRes.data?.bookings || []);
+//       } catch (error) {
+//         console.log("Error while fetching bookings", error);
+//         setError("Failed to load bookings. Please try again.");
+//       } finally {
+//         setLoading({ upcoming: false, completed: false });
+//       }
+//     };
+
+//     loadAllBookings();
+//   }, []);
+
+//   // Format date from "2025-12-25" to "Dec 25, 2025"
+//   const formatDate = (dateStr) => {
+//     const date = new Date(dateStr);
+//     return date.toLocaleDateString("en-US", {
+//       weekday: "long",
+//       year: "numeric",
+//       month: "short",
+//       day: "numeric",
+//     });
+//   };
+
+//   // Format time from "18:00" to "6:00 PM"
+//   const formatTime = (timeStr) => {
+//     if (!timeStr) return "N/A";
+//     const [hours, minutes] = timeStr.split(":");
+//     const hour = parseInt(hours);
+//     const ampm = hour >= 12 ? "PM" : "AM";
+//     const formattedHour = hour % 12 || 12;
+//     return `${formattedHour}:${minutes} ${ampm}`;
+//   };
+
+//   // Get status badge color
+//   const getStatusColor = (status) => {
+//     switch (status) {
+//       case "CONFIRMED":
+//         return "bg-green-100 text-green-800 border-green-200";
+//       case "PENDING":
+//         return "bg-yellow-100 text-yellow-800 border-yellow-200";
+//       case "CANCELLED":
+//         return "bg-red-100 text-red-800 border-red-200";
+//       case "COMPLETED":
+//         return "bg-blue-100 text-blue-800 border-blue-200";
+//       default:
+//         return "bg-gray-100 text-gray-800 border-gray-200";
+//     }
+//   };
+
+//   // Get status icon
+//   const getStatusIcon = (status) => {
+//     switch (status) {
+//       case "CONFIRMED":
+//         return <CheckCircle className="w-4 h-4" />;
+//       case "PENDING":
+//         return <ClockIcon className="w-4 h-4" />;
+//       case "COMPLETED":
+//         return <CheckSquare className="w-4 h-4" />;
+//       case "CANCELLED":
+//         return <XCircle className="w-4 h-4" />;
+//       default:
+//         return <AlertCircle className="w-4 h-4" />;
+//     }
+//   };
+
+//   // Get service type icon
+//   const getServiceIcon = (serviceType) => {
+//     switch (serviceType) {
+//       case "ONE_TO_ONE":
+//         return <Video className="w-5 h-5 text-blue-600" />;
+//       case "RESUME_REVIEW":
+//         return <FileText className="w-5 h-5 text-purple-600" />;
+//       default:
+//         return <Video className="w-5 h-5 text-gray-600" />;
+//     }
+//   };
+
+//   // Loading state
+//   if (loading.upcoming && loading.completed) {
+//     return (
+//       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+//         <div className="text-center">
+//           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+//           <p className="mt-4 text-gray-600">Loading your bookings...</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+//         <div className="text-center p-8 bg-white rounded-lg shadow-md">
+//           <div className="text-red-500 mb-4">⚠️</div>
+//           <h3 className="text-lg font-semibold text-gray-800 mb-2">
+//             Error Loading Bookings
+//           </h3>
+//           <p className="text-gray-600 mb-4">{error}</p>
+//           <button
+//             onClick={() => window.location.reload()}
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+//           >
+//             Retry
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+//       <div className="max-w-7xl mx-auto">
+//         {/* Header */}
+//         <div className="mb-8">
+//           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Bookings</h1>
+//           <p className="text-gray-600">
+//             Manage all your mentoring sessions - upcoming and completed
+//           </p>
+//         </div>
+
+//         {/* Stats Cards */}
+//         {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Upcoming Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">{upcoming.length}</p>
+//               </div>
+//               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+//                 <Clock className="w-6 h-6 text-blue-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {upcoming.filter(b => b.status === 'CONFIRMED').length} Confirmed
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Completed Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">{completed.length}</p>
+//               </div>
+//               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+//                 <CheckSquare className="w-6 h-6 text-green-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {completed.reduce((sum, b) => sum + b.amount, 0)} Total Revenue
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Total Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">{upcoming.length + completed.length}</p>
+//               </div>
+//               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+//                 <Calendar className="w-6 h-6 text-purple-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {upcoming.filter(b => b.serviceType === 'ONE_TO_ONE').length + completed.filter(b => b.serviceType === 'ONE_TO_ONE').length} 1:1 Sessions
+//               </p>
+//             </div>
+//           </div>
+//         </div> */}
+//         {/* Stats Cards */}
+//         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Upcoming Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {upcoming.length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+//                 <Clock className="w-6 h-6 text-blue-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {upcoming.filter((b) => b.status === "CONFIRMED").length}{" "}
+//                 Confirmed
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Completed Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {completed.length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+//                 <CheckSquare className="w-6 h-6 text-green-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {completed.reduce((sum, b) => sum + b.amount, 0)} Total Revenue
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Total Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {upcoming.length + completed.length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+//                 <Calendar className="w-6 h-6 text-purple-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {upcoming.filter((b) => b.serviceType === "ONE_TO_ONE").length +
+//                   completed.filter((b) => b.serviceType === "ONE_TO_ONE")
+//                     .length}{" "}
+//                 1:1 Sessions
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Reviews Received</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {completed.filter((b) => b.review && b.review.rating).length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+//                 <svg
+//                   className="w-6 h-6 text-yellow-600"
+//                   fill="currentColor"
+//                   viewBox="0 0 20 20"
+//                 >
+//                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                 </svg>
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {completed.length > 0
+//                   ? `${Math.round(
+//                       (completed.filter((b) => b.review && b.review.rating)
+//                         .length /
+//                         completed.length) *
+//                         100
+//                     )}% review rate`
+//                   : "No reviews yet"}
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Tabs */}
+//         <div className="mb-6">
+//           <div className="border-b border-gray-200">
+//             <nav className="-mb-px flex space-x-8">
+//               <button
+//                 onClick={() => setActiveTab("upcoming")}
+//                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
+//                   activeTab === "upcoming"
+//                     ? "border-blue-500 text-blue-600"
+//                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+//                 }`}
+//               >
+//                 <div className="flex items-center gap-2">
+//                   <Clock className="w-4 h-4" />
+//                   Upcoming Sessions
+//                   {upcoming.length > 0 && (
+//                     <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
+//                       {upcoming.length}
+//                     </span>
+//                   )}
+//                 </div>
+//               </button>
+//               <button
+//                 onClick={() => setActiveTab("completed")}
+//                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
+//                   activeTab === "completed"
+//                     ? "border-blue-500 text-blue-600"
+//                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+//                 }`}
+//               >
+//                 <div className="flex items-center gap-2">
+//                   <CheckSquare className="w-4 h-4" />
+//                   Completed Sessions
+//                   {completed.length > 0 && (
+//                     <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
+//                       {completed.length}
+//                     </span>
+//                   )}
+//                 </div>
+//               </button>
+//             </nav>
+//           </div>
+//         </div>
+
+//         {/* Content based on active tab */}
+//         {activeTab === "upcoming" ? (
+//           <div>
+//             {loading.upcoming ? (
+//               <div className="text-center py-12">
+//                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+//                 <p className="mt-4 text-gray-600">
+//                   Loading upcoming sessions...
+//                 </p>
+//               </div>
+//             ) : upcoming.length === 0 ? (
+//               <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+//                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+//                   <Calendar className="w-10 h-10 text-blue-600" />
+//                 </div>
+//                 <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+//                   No Upcoming Sessions
+//                 </h3>
+//                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
+//                   You don't have any upcoming mentoring sessions scheduled.
+//                   Create availability slots to start receiving bookings.
+//                 </p>
+//                 <button className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg">
+//                   Create Availability Slots
+//                 </button>
+//               </div>
+//             ) : (
+//               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//                 {upcoming.map((booking) => (
+//                   <BookingCard
+//                     key={booking._id}
+//                     booking={booking}
+//                     type="upcoming"
+//                     formatDate={formatDate}
+//                     formatTime={formatTime}
+//                     getStatusColor={getStatusColor}
+//                     getStatusIcon={getStatusIcon}
+//                     getServiceIcon={getServiceIcon}
+//                   />
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//         ) : (
+//           <div>
+//             {loading.completed ? (
+//               <div className="text-center py-12">
+//                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+//                 <p className="mt-4 text-gray-600">
+//                   Loading completed sessions...
+//                 </p>
+//               </div>
+//             ) : completed.length === 0 ? (
+//               <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+//                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+//                   <CheckSquare className="w-10 h-10 text-green-600" />
+//                 </div>
+//                 <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+//                   No Completed Sessions
+//                 </h3>
+//                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
+//                   You haven't completed any mentoring sessions yet. Completed
+//                   sessions will appear here.
+//                 </p>
+//                 <button
+//                   onClick={() => setActiveTab("upcoming")}
+//                   className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg"
+//                 >
+//                   View Upcoming Sessions
+//                 </button>
+//               </div>
+//             ) : (
+//               <div className="space-y-4">
+//                 {completed.map((booking) => (
+//                   <CompletedBookingCard
+//                     key={booking._id}
+//                     booking={booking}
+//                     formatDate={formatDate}
+//                     formatTime={formatTime}
+//                     getStatusColor={getStatusColor}
+//                     getStatusIcon={getStatusIcon}
+//                     getServiceIcon={getServiceIcon}
+//                   />
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// // Component for Upcoming Booking Card
+// const BookingCard = ({
+//   booking,
+//   type,
+//   formatDate,
+//   formatTime,
+//   getStatusColor,
+//   getStatusIcon,
+//   getServiceIcon,
+// }) => (
+//   <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+//     {/* Card Header */}
+//     <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+//       <div className="flex justify-between items-start">
+//         <div>
+//           <div className="flex items-center gap-2 mb-3">
+//             <span
+//               className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 ${getStatusColor(
+//                 booking.status
+//               )}`}
+//             >
+//               {getStatusIcon(booking.status)}
+//               {booking.status}
+//             </span>
+//             <div className="flex items-center gap-1.5 text-blue-200">
+//               {getServiceIcon(booking.serviceType)}
+//               <span className="text-sm">
+//                 {booking.serviceType === "ONE_TO_ONE"
+//                   ? "1:1 Session"
+//                   : "Resume Review"}
+//               </span>
+//             </div>
+//           </div>
+//           <h3 className="text-xl font-bold text-white">
+//             {booking.user?.name || booking.user?.username}
+//           </h3>
+//         </div>
+//         <div className="text-right">
+//           <div className="text-2xl font-bold text-white flex items-center gap-1">
+//             <IndianRupee className="w-6 h-6" />
+//             {booking.amount}
+//           </div>
+//           <div className="text-blue-200 text-sm mt-1">Session Fee</div>
+//         </div>
+//       </div>
+//     </div>
+
+//     {/* Card Body */}
+//     <div className="p-6">
+//       {/* Student Info */}
+//       <div className="mb-6">
+//         <div className="flex items-center gap-3 mb-4">
+//           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+//             <User className="w-5 h-5 text-blue-600" />
+//           </div>
+//           <div>
+//             <h4 className="font-semibold text-gray-900">
+//               {booking.user?.username}
+//             </h4>
+//             <p className="text-sm text-gray-600">{booking.user?.email}</p>
+//           </div>
+//         </div>
+
+//         <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-xl p-4">
+//           <div className="flex items-center gap-2">
+//             <GraduationCap className="w-4 h-4 text-gray-500" />
+//             <span className="text-sm text-gray-700">
+//               {booking.user?.college}
+//             </span>
+//           </div>
+//           <div className="flex items-center gap-2">
+//             <Phone className="w-4 h-4 text-gray-500" />
+//             <span className="text-sm text-gray-700">
+//               {booking.user?.phone || "N/A"}
+//             </span>
+//           </div>
+//           {booking.user?.graduationYear && (
+//             <div className="col-span-2 text-sm text-gray-600">
+//               Graduating in {booking.user?.graduationYear}
+//             </div>
+//           )}
+//         </div>
+//       </div>
+
+//       {/* Session Details */}
+//       <div className="mb-6">
+//         <h4 className="text-lg font-semibold text-gray-800 mb-4">
+//           Session Details
+//         </h4>
+//         <div className="grid grid-cols-2 gap-4">
+//           <div className="bg-blue-50 rounded-xl p-4">
+//             <div className="flex items-center gap-2 mb-2">
+//               <Calendar className="w-5 h-5 text-blue-600" />
+//               <span className="font-medium text-gray-800">Date</span>
+//             </div>
+//             <p className="text-gray-700 font-medium">
+//               {formatDate(booking.slots?.[0].date)}
+//             </p>
+//           </div>
+//           <div className="bg-blue-50 rounded-xl p-4">
+//             <div className="flex items-center gap-2 mb-2">
+//               <Clock className="w-5 h-5 text-blue-600" />
+//               <span className="font-medium text-gray-800">Time</span>
+//             </div>
+//             <p className="text-gray-700 font-medium">
+//               {formatTime(booking.slots?.[0]?.startTime)} -{" "}
+//               {formatTime(booking.slots?.[0].endTime)}
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Action Buttons */}
+//       {type === "upcoming" && (
+//         <div className="flex gap-3 pt-6 border-t border-gray-200">
+
+//           <button className="px-4 py-3 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-medium">
+//             Reschedule
+//           </button>
+//         </div>
+//       )}
+//     </div>
+
+//     {/* Card Footer */}
+//     <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+//       <div className="flex justify-between items-center text-sm text-gray-600">
+//         <div>
+//           Booked on:{" "}
+//           {new Date(booking.createdAt).toLocaleDateString("en-US", {
+//             month: "short",
+//             day: "numeric",
+//             year: "numeric",
+//           })}
+//         </div>
+//         <div className="flex items-center gap-1">
+//           <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">
+//             ID: {booking._id.slice(-6)}
+//           </span>
+//           <ChevronRight className="w-4 h-4" />
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+// );
+
+// // Component for Completed Booking Card
+// const CompletedBookingCard = ({
+//   booking,
+//   formatDate,
+//   formatTime,
+//   getStatusColor,
+//   getStatusIcon,
+//   getServiceIcon,
+// }) => {
+//   const hasReview = booking.review && booking.review.rating;
+
+//   return (
+//     <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+//       <div className="p-6">
+//         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+//           {/* Left Section */}
+//           <div className="flex-1">
+//             <div className="flex items-center gap-3 mb-3">
+//               {getServiceIcon(booking.serviceType)}
+//               <h3 className="text-lg font-semibold text-gray-900">
+//                 {booking.serviceType === "ONE_TO_ONE"
+//                   ? "1:1 Mentoring Session"
+//                   : "Resume Review"}
+//               </h3>
+//               <span
+//                 className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${getStatusColor(
+//                   "COMPLETED"
+//                 )}`}
+//               >
+//                 {getStatusIcon("COMPLETED")}
+//                 COMPLETED
+//               </span>
+//             </div>
+
+//             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+//               <div className="flex items-center gap-1.5">
+//                 <User className="w-4 h-4" />
+//                 <span className="font-medium">
+//                   {booking.user?.name || booking.user?.username}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <Calendar className="w-4 h-4" />
+//                 <span>{formatDate(booking.slot?.date)}</span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <Clock className="w-4 h-4" />
+//                 <span>{formatTime(booking.slot?.startTime)}</span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <GraduationCap className="w-4 h-4" />
+//                 <span>{booking.user?.college}</span>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Right Section */}
+//           <div className="flex items-center gap-6">
+//             <div className="text-right">
+//               <div className="text-2xl font-bold text-gray-900 flex items-center gap-1">
+//                 <IndianRupee className="w-5 h-5" />
+//                 {booking.amount}
+//               </div>
+//               <div className="text-sm text-gray-600">Amount Paid</div>
+//             </div>
+//             <div className="grid grid-cols-2 gap-4">
+//           <div className=" rounded-xl p-4">
+//             <div className="flex items-center gap-2 mb-2">
+//               <Calendar className="w-5 h-5 text-blue-600" />
+//               <span className="font-medium text-gray-800">Date</span>
+//             </div>
+//             <p className="text-gray-700 font-medium">
+//               {formatDate(booking.slots?.[0].date)}
+//             </p>
+//           </div>
+//           <div className=" rounded-xl p-4">
+//             <div className="flex items-center gap-2 mb-2">
+//               <Clock className="w-5 h-5 text-blue-600" />
+//               <span className="font-medium text-gray-800">Time</span>
+//             </div>
+//             <p className="text-gray-700 font-medium">
+//               {formatTime(booking.slots?.[0]?.startTime)} -{" "}
+//               {formatTime(booking.slots?.[0].endTime)}
+//             </p>
+//           </div>
+//         </div>
+//             <div className="text-right">
+//               <div className="text-sm font-medium text-gray-900">
+//                 {new Date(booking.createdAt).toLocaleDateString("en-US", {
+//                   month: "short",
+//                   day: "numeric",
+//                 })}
+//               </div>
+//               <div className="text-xs text-gray-600">Booked Date</div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Review Section */}
+//         {hasReview && (
+//           <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+//             <div className="flex items-start justify-between">
+//               <div className="flex-1">
+//                 <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+//                   <svg
+//                     className="w-5 h-5 text-yellow-600"
+//                     fill="currentColor"
+//                     viewBox="0 0 20 20"
+//                   >
+//                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                   </svg>
+//                   Student Review
+//                 </h4>
+
+//                 {/* Star Rating */}
+//                 <div className="flex items-center gap-1 mb-3">
+//                   {[1, 2, 3, 4, 5].map((star) => (
+//                     <svg
+//                       key={star}
+//                       className={`w-5 h-5 ${
+//                         star <= booking.review.rating
+//                           ? "text-yellow-500 fill-yellow-500"
+//                           : "text-gray-300 fill-gray-300"
+//                       }`}
+//                       viewBox="0 0 20 20"
+//                       fill="currentColor"
+//                     >
+//                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                     </svg>
+//                   ))}
+//                   <span className="ml-2 font-medium text-gray-700">
+//                     {booking.review.rating}/5
+//                   </span>
+//                 </div>
+
+//                 {/* Review Comment */}
+//                 {booking.review.comment && (
+//                   <div className="mt-2">
+//                     <p className="text-gray-700 italic">
+//                       "{booking.review.comment}"
+//                     </p>
+//                   </div>
+//                 )}
+
+//                 {/* Review Date */}
+//                 <div className="mt-3 text-sm text-gray-500">
+//                   Reviewed on:{" "}
+//                   {new Date(booking.review.reviewedAt).toLocaleDateString(
+//                     "en-US",
+//                     {
+//                       month: "short",
+//                       day: "numeric",
+//                       year: "numeric",
+//                     }
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Review Badge */}
+//               <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-full text-sm font-semibold">
+//                 Reviewed
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* No Review Section */}
+//         {!hasReview && (
+//           <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div className="flex items-center gap-3">
+//                 <svg
+//                   className="w-5 h-5 text-gray-400"
+//                   fill="none"
+//                   viewBox="0 0 24 24"
+//                   stroke="currentColor"
+//                 >
+//                   <path
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                     strokeWidth={2}
+//                     d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+//                   />
+//                 </svg>
+//                 <div>
+//                   <p className="text-sm text-gray-600">
+//                     No review yet from student
+//                   </p>
+//                   <p className="text-xs text-gray-500 mt-1">
+//                     Student hasn't provided feedback for this session
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Payment Info */}
+//         <div className="mt-4 pt-4 border-t border-gray-100">
+//           <div className="flex items-center justify-between text-sm">
+//             <div className="flex items-center gap-4">
+//               <div className="flex items-center gap-1.5">
+//                 <CreditCard className="w-4 h-4 text-gray-500" />
+//                 <span className="text-gray-600">Payment ID:</span>
+//                 <span className="font-mono text-gray-900">
+//                   {booking.paymentId}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <span className="text-gray-600">Provider:</span>
+//                 <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+//                   {booking.paymentProvider}
+//                 </span>
+//               </div>
+//             </div>
+//             <div className="text-sm text-gray-500">
+//               Completed on:{" "}
+//               {new Date(booking.updatedAt).toLocaleDateString("en-US", {
+//                 month: "short",
+//                 day: "numeric",
+//                 year: "numeric",
+//               })}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+// export default MentorBookings;
 // Pages/Mentor/MentorBookings.jsx
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
+// import { apiConnector } from "../../Service/apiConnector";
+// import { mentorEndpoints } from "../../Service/apis";
+// import {
+//   Calendar,
+//   Clock,
+//   User,
+//   Phone,
+//   GraduationCap,
+//   CreditCard,
+//   CheckCircle,
+//   Clock as ClockIcon,
+//   ChevronRight,
+//   DollarSign,
+//   FileText,
+//   Video,
+//   CheckSquare,
+//   XCircle,
+//   AlertCircle,
+//   IndianRupee,
+//   X,
+//   Check,
+//   Loader2,
+// } from "lucide-react";
+
+// const MentorBookings = () => {
+//   const [upcoming, setUpcoming] = useState([]);
+//   const [completed, setCompleted] = useState([]);
+//   const [loading, setLoading] = useState({ upcoming: true, completed: true });
+//   const [error, setError] = useState(null);
+//   const [activeTab, setActiveTab] = useState("upcoming");
+
+//   useEffect(() => {
+//     const loadAllBookings = async () => {
+//       try {
+//         setLoading({ upcoming: true, completed: true });
+//         setError(null);
+
+//         // Load upcoming bookings
+//         const upcomingRes = await apiConnector(
+//           "GET",
+//           mentorEndpoints.MENTOR_BOOKINGS_UPCOMING
+//         );
+//         setUpcoming(upcomingRes.data?.bookings || []);
+//         console.log("Upcoming bookings:", upcomingRes.data?.bookings);
+//         // Load completed bookings
+//         const completedRes = await apiConnector(
+//           "GET",
+//           mentorEndpoints.MENTOR_COMPLETED_BOOKING
+//         );
+//         console.log("Completed bookings:", completedRes.data?.bookings);
+//         setCompleted(completedRes.data?.bookings || []);
+//       } catch (error) {
+//         console.log("Error while fetching bookings", error);
+//         setError("Failed to load bookings. Please try again.");
+//       } finally {
+//         setLoading({ upcoming: false, completed: false });
+//       }
+//     };
+
+//     loadAllBookings();
+//   }, []);
+
+//   // Format date from "2025-12-25" to "Dec 25, 2025"
+//   const formatDate = (dateStr) => {
+//     const date = new Date(dateStr);
+//     return date.toLocaleDateString("en-US", {
+//       weekday: "long",
+//       year: "numeric",
+//       month: "short",
+//       day: "numeric",
+//     });
+//   };
+
+//   // Format time from "18:00" to "6:00 PM"
+//   const formatTime = (timeStr) => {
+//     if (!timeStr) return "N/A";
+//     const [hours, minutes] = timeStr.split(":");
+//     const hour = parseInt(hours);
+//     const ampm = hour >= 12 ? "PM" : "AM";
+//     const formattedHour = hour % 12 || 12;
+//     return `${formattedHour}:${minutes} ${ampm}`;
+//   };
+
+//   // Get status badge color
+//   const getStatusColor = (status) => {
+//     switch (status) {
+//       case "CONFIRMED":
+//         return "bg-green-100 text-green-800 border-green-200";
+//       case "PENDING":
+//         return "bg-yellow-100 text-yellow-800 border-yellow-200";
+//       case "CANCELLED":
+//         return "bg-red-100 text-red-800 border-red-200";
+//       case "COMPLETED":
+//         return "bg-blue-100 text-blue-800 border-blue-200";
+//       default:
+//         return "bg-gray-100 text-gray-800 border-gray-200";
+//     }
+//   };
+
+//   // Get status icon
+//   const getStatusIcon = (status) => {
+//     switch (status) {
+//       case "CONFIRMED":
+//         return <CheckCircle className="w-4 h-4" />;
+//       case "PENDING":
+//         return <ClockIcon className="w-4 h-4" />;
+//       case "COMPLETED":
+//         return <CheckSquare className="w-4 h-4" />;
+//       case "CANCELLED":
+//         return <XCircle className="w-4 h-4" />;
+//       default:
+//         return <AlertCircle className="w-4 h-4" />;
+//     }
+//   };
+
+//   // Get service type icon
+//   const getServiceIcon = (serviceType) => {
+//     switch (serviceType) {
+//       case "ONE_TO_ONE":
+//         return <Video className="w-5 h-5 text-blue-600" />;
+//       case "RESUME_REVIEW":
+//         return <FileText className="w-5 h-5 text-purple-600" />;
+//       default:
+//         return <Video className="w-5 h-5 text-gray-600" />;
+//     }
+//   };
+
+//   // Handle refresh after reschedule
+//   const refreshBookings = async () => {
+//     try {
+//       const upcomingRes = await apiConnector(
+//         "GET",
+//         mentorEndpoints.MENTOR_BOOKINGS_UPCOMING
+//       );
+//       setUpcoming(upcomingRes.data?.bookings || []);
+//     } catch (error) {
+//       console.error("Error refreshing bookings:", error);
+//     }
+//   };
+
+//   // Loading state
+//   if (loading.upcoming && loading.completed) {
+//     return (
+//       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+//         <div className="text-center">
+//           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+//           <p className="mt-4 text-gray-600">Loading your bookings...</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   if (error) {
+//     return (
+//       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+//         <div className="text-center p-8 bg-white rounded-lg shadow-md">
+//           <div className="text-red-500 mb-4">⚠️</div>
+//           <h3 className="text-lg font-semibold text-gray-800 mb-2">
+//             Error Loading Bookings
+//           </h3>
+//           <p className="text-gray-600 mb-4">{error}</p>
+//           <button
+//             onClick={() => window.location.reload()}
+//             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+//           >
+//             Retry
+//           </button>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+//       <div className="max-w-7xl mx-auto">
+//         {/* Header */}
+//         <div className="mb-8">
+//           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Bookings</h1>
+//           <p className="text-gray-600">
+//             Manage all your mentoring sessions - upcoming and completed
+//           </p>
+//         </div>
+
+//         {/* Stats Cards */}
+//         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Upcoming Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {upcoming.length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+//                 <Clock className="w-6 h-6 text-blue-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {upcoming.filter((b) => b.status === "CONFIRMED").length}{" "}
+//                 Confirmed
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Completed Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {completed.length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+//                 <CheckSquare className="w-6 h-6 text-green-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {completed.reduce((sum, b) => sum + b.amount, 0)} Total Revenue
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Total Sessions</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {upcoming.length + completed.length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+//                 <Calendar className="w-6 h-6 text-purple-600" />
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {upcoming.filter((b) => b.serviceType === "ONE_TO_ONE").length +
+//                   completed.filter((b) => b.serviceType === "ONE_TO_ONE")
+//                     .length}{" "}
+//                 1:1 Sessions
+//               </p>
+//             </div>
+//           </div>
+
+//           <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div>
+//                 <p className="text-sm text-gray-600">Reviews Received</p>
+//                 <p className="text-2xl font-bold text-gray-900">
+//                   {completed.filter((b) => b.review && b.review.rating).length}
+//                 </p>
+//               </div>
+//               <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+//                 <svg
+//                   className="w-6 h-6 text-yellow-600"
+//                   fill="currentColor"
+//                   viewBox="0 0 20 20"
+//                 >
+//                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                 </svg>
+//               </div>
+//             </div>
+//             <div className="mt-4 pt-4 border-t border-gray-100">
+//               <p className="text-sm text-gray-600">
+//                 {completed.length > 0
+//                   ? `${Math.round(
+//                       (completed.filter((b) => b.review && b.review.rating)
+//                         .length /
+//                         completed.length) *
+//                         100
+//                     )}% review rate`
+//                   : "No reviews yet"}
+//               </p>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Tabs */}
+//         <div className="mb-6">
+//           <div className="border-b border-gray-200">
+//             <nav className="-mb-px flex space-x-8">
+//               <button
+//                 onClick={() => setActiveTab("upcoming")}
+//                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
+//                   activeTab === "upcoming"
+//                     ? "border-blue-500 text-blue-600"
+//                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+//                 }`}
+//               >
+//                 <div className="flex items-center gap-2">
+//                   <Clock className="w-4 h-4" />
+//                   Upcoming Sessions
+//                   {upcoming.length > 0 && (
+//                     <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
+//                       {upcoming.length}
+//                     </span>
+//                   )}
+//                 </div>
+//               </button>
+//               <button
+//                 onClick={() => setActiveTab("completed")}
+//                 className={`py-3 px-1 border-b-2 font-medium text-sm ${
+//                   activeTab === "completed"
+//                     ? "border-blue-500 text-blue-600"
+//                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+//                 }`}
+//               >
+//                 <div className="flex items-center gap-2">
+//                   <CheckSquare className="w-4 h-4" />
+//                   Completed Sessions
+//                   {completed.length > 0 && (
+//                     <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
+//                       {completed.length}
+//                     </span>
+//                   )}
+//                 </div>
+//               </button>
+//             </nav>
+//           </div>
+//         </div>
+
+//         {/* Content based on active tab */}
+//         {activeTab === "upcoming" ? (
+//           <div>
+//             {loading.upcoming ? (
+//               <div className="text-center py-12">
+//                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+//                 <p className="mt-4 text-gray-600">
+//                   Loading upcoming sessions...
+//                 </p>
+//               </div>
+//             ) : upcoming.length === 0 ? (
+//               <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+//                 <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+//                   <Calendar className="w-10 h-10 text-blue-600" />
+//                 </div>
+//                 <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+//                   No Upcoming Sessions
+//                 </h3>
+//                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
+//                   You don't have any upcoming mentoring sessions scheduled.
+//                   Create availability slots to start receiving bookings.
+//                 </p>
+//                 <button className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg">
+//                   Create Availability Slots
+//                 </button>
+//               </div>
+//             ) : (
+//               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+//                 {upcoming.map((booking) => (
+//                   <BookingCard
+//                     key={booking._id}
+//                     booking={booking}
+//                     type="upcoming"
+//                     formatDate={formatDate}
+//                     formatTime={formatTime}
+//                     getStatusColor={getStatusColor}
+//                     getStatusIcon={getStatusIcon}
+//                     getServiceIcon={getServiceIcon}
+//                     refreshBookings={refreshBookings}
+//                   />
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//         ) : (
+//           <div>
+//             {loading.completed ? (
+//               <div className="text-center py-12">
+//                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+//                 <p className="mt-4 text-gray-600">
+//                   Loading completed sessions...
+//                 </p>
+//               </div>
+//             ) : completed.length === 0 ? (
+//               <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+//                 <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+//                   <CheckSquare className="w-10 h-10 text-green-600" />
+//                 </div>
+//                 <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+//                   No Completed Sessions
+//                 </h3>
+//                 <p className="text-gray-600 mb-8 max-w-md mx-auto">
+//                   You haven't completed any mentoring sessions yet. Completed
+//                   sessions will appear here.
+//                 </p>
+//                 <button
+//                   onClick={() => setActiveTab("upcoming")}
+//                   className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg"
+//                 >
+//                   View Upcoming Sessions
+//                 </button>
+//               </div>
+//             ) : (
+//               <div className="space-y-4">
+//                 {completed.map((booking) => (
+//                   <CompletedBookingCard
+//                     key={booking._id}
+//                     booking={booking}
+//                     formatDate={formatDate}
+//                     formatTime={formatTime}
+//                     getStatusColor={getStatusColor}
+//                     getStatusIcon={getStatusIcon}
+//                     getServiceIcon={getServiceIcon}
+//                   />
+//                 ))}
+//               </div>
+//             )}
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// // Reschedule Modal Component
+// const RescheduleModal = ({ booking, onClose, onSuccess }) => {
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState("");
+//   const [formData, setFormData] = useState({
+//     date: "",
+//     startTime: "",
+//     reason: "",
+//   });
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+//     setLoading(true);
+//     setError("");
+
+//     try {
+//       const response = await apiConnector(
+//         "POST",
+//         mentorEndpoints.MENTOR_REQUEST_RESCHEDULE(booking._id),
+//         formData
+//       );
+
+//       if (response.data.success) {
+//         onSuccess();
+//         onClose();
+//       } else {
+//         setError(response.data.message || "Failed to request reschedule");
+//       }
+//     } catch (err) {
+//       console.error("Reschedule error:", err);
+//       setError(err.response?.data?.message || "Something went wrong");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // Get tomorrow's date for min date
+//   const tomorrow = new Date();
+//   tomorrow.setDate(tomorrow.getDate() + 1);
+//   const minDate = tomorrow.toISOString().split("T")[0];
+
+//   // Time slots
+//   const timeSlots = [
+//     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+//     "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+//     "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
+//   ];
+
+//   return (
+//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+//         {/* Modal Header */}
+//         <div className="sticky top-0 bg-white z-10 flex justify-between items-center p-6 border-b border-gray-200">
+//           <div>
+//             <h3 className="text-xl font-bold text-gray-900">Reschedule Session</h3>
+//             <p className="text-sm text-gray-600 mt-1">
+//               Propose a new time for this session
+//             </p>
+//           </div>
+//           <button
+//             onClick={onClose}
+//             className="p-2 hover:bg-gray-100 rounded-lg transition"
+//           >
+//             <X className="w-5 h-5 text-gray-500" />
+//           </button>
+//         </div>
+
+//         {/* Modal Body */}
+//         <form onSubmit={handleSubmit} className="p-6">
+//           {/* Current Booking Info */}
+//           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+//             <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+//               <AlertCircle className="w-4 h-4 text-blue-600" />
+//               Current Session Time
+//             </h4>
+//             <div className="flex items-center gap-4">
+//               <div className="flex items-center gap-2">
+//                 <Calendar className="w-4 h-4 text-blue-600" />
+//                 <span className="text-sm">
+//                   {new Date(booking.slots[0].date).toLocaleDateString('en-US', {
+//                     weekday: 'short',
+//                     month: 'short',
+//                     day: 'numeric'
+//                   })}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-2">
+//                 <Clock className="w-4 h-4 text-blue-600" />
+//                 <span className="text-sm">
+//                   {booking.slots[0].startTime} - {booking.slots[0].endTime}
+//                 </span>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Error Message */}
+//           {error && (
+//             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+//               <p className="text-sm text-red-600">{error}</p>
+//             </div>
+//           )}
+
+//           {/* Date Input */}
+//           <div className="mb-4">
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               New Date
+//             </label>
+//             <input
+//               type="date"
+//               required
+//               min={minDate}
+//               value={formData.date}
+//               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+//               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+//             />
+//           </div>
+
+//           {/* Time Input */}
+//           <div className="mb-4">
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               New Start Time
+//             </label>
+//             <select
+//               required
+//               value={formData.startTime}
+//               onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+//               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+//             >
+//               <option value="">Select a time</option>
+//               {timeSlots.map((time) => (
+//                 <option key={time} value={time}>
+//                   {new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+//                     hour: 'numeric',
+//                     minute: '2-digit',
+//                     hour12: true
+//                   })}
+//                 </option>
+//               ))}
+//             </select>
+//           </div>
+
+//           {/* Reason Input */}
+//           <div className="mb-6">
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Reason for Reschedule (Optional)
+//             </label>
+//             <textarea
+//               value={formData.reason}
+//               onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+//               placeholder="e.g., Unexpected conflict, Availability change..."
+//               rows="3"
+//               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+//             />
+//           </div>
+
+//           {/* Modal Footer */}
+//           <div className="flex gap-3 pt-6 border-t border-gray-200">
+//             <button
+//               type="button"
+//               onClick={onClose}
+//               disabled={loading}
+//               className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50"
+//             >
+//               Cancel
+//             </button>
+//             <button
+//               type="submit"
+//               disabled={loading}
+//               className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+//             >
+//               {loading ? (
+//                 <>
+//                   <Loader2 className="w-4 h-4 animate-spin" />
+//                   Sending...
+//                 </>
+//               ) : (
+//                 <>
+//                   <Check className="w-4 h-4" />
+//                   Send Request
+//                 </>
+//               )}
+//             </button>
+//           </div>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // Component for Upcoming Booking Card
+// const BookingCard = ({
+//   booking,
+//   type,
+//   formatDate,
+//   formatTime,
+//   getStatusColor,
+//   getStatusIcon,
+//   getServiceIcon,
+//   refreshBookings,
+// }) => {
+//   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+
+//   // Check if reschedule is already requested
+//   const hasPendingReschedule = booking.rescheduleRequest?.status === "PENDING";
+//   const rescheduleByMentor = booking.rescheduleRequest?.proposedBy === "MENTOR";
+//   const rescheduleByUser = booking.rescheduleRequest?.proposedBy === "USER";
+
+//   // Handle reschedule request success
+//   const handleRescheduleSuccess = () => {
+//     refreshBookings();
+//   };
+
+//   return (
+//     <>
+//       <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+//         {/* Card Header */}
+//         <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+//           <div className="flex justify-between items-start">
+//             <div>
+//               <div className="flex items-center gap-2 mb-3">
+//                 <span
+//                   className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 ${getStatusColor(
+//                     booking.status
+//                   )}`}
+//                 >
+//                   {getStatusIcon(booking.status)}
+//                   {booking.status}
+//                 </span>
+//                 {hasPendingReschedule && rescheduleByMentor && (
+//                   <span className="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold flex items-center gap-1.5">
+//                     <ClockIcon className="w-4 h-4" />
+//                     Reschedule Pending
+//                   </span>
+//                 )}
+//                 {hasPendingReschedule && rescheduleByUser && (
+//                   <span className="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full text-sm font-semibold flex items-center gap-1.5">
+//                     <AlertCircle className="w-4 h-4" />
+//                     User Requested Reschedule
+//                   </span>
+//                 )}
+//                 <div className="flex items-center gap-1.5 text-blue-200">
+//                   {getServiceIcon(booking.serviceType)}
+//                   <span className="text-sm">
+//                     {booking.serviceType === "ONE_TO_ONE"
+//                       ? "1:1 Session"
+//                       : "Resume Review"}
+//                   </span>
+//                 </div>
+//               </div>
+//               <h3 className="text-xl font-bold text-white">
+//                 {booking.user?.name || booking.user?.username}
+//               </h3>
+//             </div>
+//             <div className="text-right">
+//               <div className="text-2xl font-bold text-white flex items-center gap-1">
+//                 <IndianRupee className="w-6 h-6" />
+//                 {booking.amount}
+//               </div>
+//               <div className="text-blue-200 text-sm mt-1">Session Fee</div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Card Body */}
+//         <div className="p-6">
+//           {/* Student Info */}
+//           <div className="mb-6">
+//             <div className="flex items-center gap-3 mb-4">
+//               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+//                 <User className="w-5 h-5 text-blue-600" />
+//               </div>
+//               <div>
+//                 <h4 className="font-semibold text-gray-900">
+//                   {booking.user?.username}
+//                 </h4>
+//                 <p className="text-sm text-gray-600">{booking.user?.email}</p>
+//               </div>
+//             </div>
+
+//             <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-xl p-4">
+//               <div className="flex items-center gap-2">
+//                 <GraduationCap className="w-4 h-4 text-gray-500" />
+//                 <span className="text-sm text-gray-700">
+//                   {booking.user?.college}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-2">
+//                 <Phone className="w-4 h-4 text-gray-500" />
+//                 <span className="text-sm text-gray-700">
+//                   {booking.user?.phone || "N/A"}
+//                 </span>
+//               </div>
+//               {booking.user?.graduationYear && (
+//                 <div className="col-span-2 text-sm text-gray-600">
+//                   Graduating in {booking.user?.graduationYear}
+//                 </div>
+//               )}
+//             </div>
+//           </div>
+
+//           {/* Session Details */}
+//           <div className="mb-6">
+//             <h4 className="text-lg font-semibold text-gray-800 mb-4">
+//               Session Details
+//             </h4>
+//             <div className="grid grid-cols-2 gap-4">
+//               <div className="bg-blue-50 rounded-xl p-4">
+//                 <div className="flex items-center gap-2 mb-2">
+//                   <Calendar className="w-5 h-5 text-blue-600" />
+//                   <span className="font-medium text-gray-800">Date</span>
+//                 </div>
+//                 <p className="text-gray-700 font-medium">
+//                   {formatDate(booking.slots?.[0].date)}
+//                 </p>
+//               </div>
+//               <div className="bg-blue-50 rounded-xl p-4">
+//                 <div className="flex items-center gap-2 mb-2">
+//                   <Clock className="w-5 h-5 text-blue-600" />
+//                   <span className="font-medium text-gray-800">Time</span>
+//                 </div>
+//                 <p className="text-gray-700 font-medium">
+//                   {formatTime(booking.slots?.[0]?.startTime)} -{" "}
+//                   {formatTime(booking.slots?.[0].endTime)}
+//                 </p>
+//               </div>
+//             </div>
+            
+//             {/* Show proposed reschedule if pending */}
+//             {hasPendingReschedule && rescheduleByMentor && (
+//               <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+//                 <h5 className="font-semibold text-yellow-800 mb-2 flex items-center gap-2">
+//                   <ClockIcon className="w-4 h-4" />
+//                   Proposed New Time
+//                 </h5>
+//                 <div className="grid grid-cols-2 gap-3">
+//                   <div className="flex items-center gap-2">
+//                     <Calendar className="w-4 h-4 text-yellow-600" />
+//                     <span className="text-sm">
+//                       {new Date(booking.rescheduleRequest.proposedDate).toLocaleDateString('en-US', {
+//                         month: 'short',
+//                         day: 'numeric',
+//                         year: 'numeric'
+//                       })}
+//                     </span>
+//                   </div>
+//                   <div className="flex items-center gap-2">
+//                     <Clock className="w-4 h-4 text-yellow-600" />
+//                     <span className="text-sm">
+//                       {formatTime(booking.rescheduleRequest.proposedStartTime)}
+//                     </span>
+//                   </div>
+//                 </div>
+//                 {booking.rescheduleRequest.reason && (
+//                   <p className="mt-2 text-sm text-yellow-700">
+//                     <span className="font-medium">Reason: </span>
+//                     {booking.rescheduleRequest.reason}
+//                   </p>
+//                 )}
+//                 <p className="mt-2 text-xs text-yellow-600">
+//                   Waiting for user response
+//                 </p>
+//               </div>
+//             )}
+
+//             {/* Show user reschedule request */}
+//             {hasPendingReschedule && rescheduleByUser && (
+//               <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+//                 <h5 className="font-semibold text-orange-800 mb-2 flex items-center gap-2">
+//                   <AlertCircle className="w-4 h-4" />
+//                   User Requested Reschedule
+//                 </h5>
+//                 {booking.rescheduleRequest.reason && (
+//                   <p className="mb-3 text-sm text-orange-700">
+//                     <span className="font-medium">Reason: </span>
+//                     {booking.rescheduleRequest.reason}
+//                   </p>
+//                 )}
+//                 <p className="text-xs text-orange-600">
+//                   You need to take action on this request
+//                 </p>
+//               </div>
+//             )}
+//           </div>
+
+//           {/* Action Buttons */}
+//           {type === "upcoming" && booking.status === "CONFIRMED" && (
+//             <div className="flex gap-3 pt-6 border-t border-gray-200">
+//               {!hasPendingReschedule ? (
+//                 <button
+//                   onClick={() => setShowRescheduleModal(true)}
+//                   className="px-4 py-3 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-medium"
+//                 >
+//                   Reschedule
+//                 </button>
+//               ) : rescheduleByMentor ? (
+//                 <div className="flex items-center gap-2 text-sm text-gray-600">
+//                   <ClockIcon className="w-4 h-4" />
+//                   Reschedule request sent
+//                 </div>
+//               ) : (
+//                 <div className="flex items-center gap-2 text-sm text-orange-600">
+//                   <AlertCircle className="w-4 h-4" />
+//                   User requested reschedule
+//                 </div>
+//               )}
+//             </div>
+//           )}
+//         </div>
+
+//         {/* Card Footer */}
+//         <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+//           <div className="flex justify-between items-center text-sm text-gray-600">
+//             <div>
+//               Booked on:{" "}
+//               {new Date(booking.createdAt).toLocaleDateString("en-US", {
+//                 month: "short",
+//                 day: "numeric",
+//                 year: "numeric",
+//               })}
+//             </div>
+//             <div className="flex items-center gap-1">
+//               <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">
+//                 ID: {booking._id.slice(-6)}
+//               </span>
+//               <ChevronRight className="w-4 h-4" />
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Reschedule Modal */}
+//       {showRescheduleModal && (
+//         <RescheduleModal
+//           booking={booking}
+//           onClose={() => setShowRescheduleModal(false)}
+//           onSuccess={handleRescheduleSuccess}
+//         />
+//       )}
+//     </>
+//   );
+// };
+
+// // Component for Completed Booking Card
+// const CompletedBookingCard = ({
+//   booking,
+//   formatDate,
+//   formatTime,
+//   getStatusColor,
+//   getStatusIcon,
+//   getServiceIcon,
+// }) => {
+//   const hasReview = booking.review && booking.review.rating;
+
+//   return (
+//     <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+//       <div className="p-6">
+//         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+//           {/* Left Section */}
+//           <div className="flex-1">
+//             <div className="flex items-center gap-3 mb-3">
+//               {getServiceIcon(booking.serviceType)}
+//               <h3 className="text-lg font-semibold text-gray-900">
+//                 {booking.serviceType === "ONE_TO_ONE"
+//                   ? "1:1 Mentoring Session"
+//                   : "Resume Review"}
+//               </h3>
+//               <span
+//                 className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${getStatusColor(
+//                   "COMPLETED"
+//                 )}`}
+//               >
+//                 {getStatusIcon("COMPLETED")}
+//                 COMPLETED
+//               </span>
+//             </div>
+
+//             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+//               <div className="flex items-center gap-1.5">
+//                 <User className="w-4 h-4" />
+//                 <span className="font-medium">
+//                   {booking.user?.name || booking.user?.username}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <Calendar className="w-4 h-4" />
+//                 <span>{formatDate(booking.slot?.date)}</span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <Clock className="w-4 h-4" />
+//                 <span>{formatTime(booking.slot?.startTime)}</span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <GraduationCap className="w-4 h-4" />
+//                 <span>{booking.user?.college}</span>
+//               </div>
+//             </div>
+//           </div>
+
+//           {/* Right Section */}
+//           <div className="flex items-center gap-6">
+//             <div className="text-right">
+//               <div className="text-2xl font-bold text-gray-900 flex items-center gap-1">
+//                 <IndianRupee className="w-5 h-5" />
+//                 {booking.amount}
+//               </div>
+//               <div className="text-sm text-gray-600">Amount Paid</div>
+//             </div>
+//             <div className="grid grid-cols-2 gap-4">
+//           <div className=" rounded-xl p-4">
+//             <div className="flex items-center gap-2 mb-2">
+//               <Calendar className="w-5 h-5 text-blue-600" />
+//               <span className="font-medium text-gray-800">Date</span>
+//             </div>
+//             <p className="text-gray-700 font-medium">
+//               {formatDate(booking.slots?.[0].date)}
+//             </p>
+//           </div>
+//           <div className=" rounded-xl p-4">
+//             <div className="flex items-center gap-2 mb-2">
+//               <Clock className="w-5 h-5 text-blue-600" />
+//               <span className="font-medium text-gray-800">Time</span>
+//             </div>
+//             <p className="text-gray-700 font-medium">
+//               {formatTime(booking.slots?.[0]?.startTime)} -{" "}
+//               {formatTime(booking.slots?.[0].endTime)}
+//             </p>
+//           </div>
+//         </div>
+//             <div className="text-right">
+//               <div className="text-sm font-medium text-gray-900">
+//                 {new Date(booking.createdAt).toLocaleDateString("en-US", {
+//                   month: "short",
+//                   day: "numeric",
+//                 })}
+//               </div>
+//               <div className="text-xs text-gray-600">Booked Date</div>
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Review Section */}
+//         {hasReview && (
+//           <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+//             <div className="flex items-start justify-between">
+//               <div className="flex-1">
+//                 <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+//                   <svg
+//                     className="w-5 h-5 text-yellow-600"
+//                     fill="currentColor"
+//                     viewBox="0 0 20 20"
+//                   >
+//                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                   </svg>
+//                   Student Review
+//                 </h4>
+
+//                 {/* Star Rating */}
+//                 <div className="flex items-center gap-1 mb-3">
+//                   {[1, 2, 3, 4, 5].map((star) => (
+//                     <svg
+//                       key={star}
+//                       className={`w-5 h-5 ${
+//                         star <= booking.review.rating
+//                           ? "text-yellow-500 fill-yellow-500"
+//                           : "text-gray-300 fill-gray-300"
+//                       }`}
+//                       viewBox="0 0 20 20"
+//                       fill="currentColor"
+//                     >
+//                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+//                     </svg>
+//                   ))}
+//                   <span className="ml-2 font-medium text-gray-700">
+//                     {booking.review.rating}/5
+//                   </span>
+//                 </div>
+
+//                 {/* Review Comment */}
+//                 {booking.review.comment && (
+//                   <div className="mt-2">
+//                     <p className="text-gray-700 italic">
+//                       "{booking.review.comment}"
+//                     </p>
+//                   </div>
+//                 )}
+
+//                 {/* Review Date */}
+//                 <div className="mt-3 text-sm text-gray-500">
+//                   Reviewed on:{" "}
+//                   {new Date(booking.review.reviewedAt).toLocaleDateString(
+//                     "en-US",
+//                     {
+//                       month: "short",
+//                       day: "numeric",
+//                       year: "numeric",
+//                     }
+//                   )}
+//                 </div>
+//               </div>
+
+//               {/* Review Badge */}
+//               <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-amber-500 text-white rounded-full text-sm font-semibold">
+//                 Reviewed
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* No Review Section */}
+//         {!hasReview && (
+//           <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+//             <div className="flex items-center justify-between">
+//               <div className="flex items-center gap-3">
+//                 <svg
+//                   className="w-5 h-5 text-gray-400"
+//                   fill="none"
+//                   viewBox="0 0 24 24"
+//                   stroke="currentColor"
+//                 >
+//                   <path
+//                     strokeLinecap="round"
+//                     strokeLinejoin="round"
+//                     strokeWidth={2}
+//                     d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+//                   />
+//                 </svg>
+//                 <div>
+//                   <p className="text-sm text-gray-600">
+//                     No review yet from student
+//                   </p>
+//                   <p className="text-xs text-gray-500 mt-1">
+//                     Student hasn't provided feedback for this session
+//                   </p>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {/* Payment Info */}
+//         <div className="mt-4 pt-4 border-t border-gray-100">
+//           <div className="flex items-center justify-between text-sm">
+//             <div className="flex items-center gap-4">
+//               <div className="flex items-center gap-1.5">
+//                 <CreditCard className="w-4 h-4 text-gray-500" />
+//                 <span className="text-gray-600">Payment ID:</span>
+//                 <span className="font-mono text-gray-900">
+//                   {booking.paymentId}
+//                 </span>
+//               </div>
+//               <div className="flex items-center gap-1.5">
+//                 <span className="text-gray-600">Provider:</span>
+//                 <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+//                   {booking.paymentProvider}
+//                 </span>
+//               </div>
+//             </div>
+//             <div className="text-sm text-gray-500">
+//               Completed on:{" "}
+//               {new Date(booking.updatedAt).toLocaleDateString("en-US", {
+//                 month: "short",
+//                 day: "numeric",
+//                 year: "numeric",
+//               })}
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default MentorBookings;
+import { useEffect, useState, useCallback, memo } from "react";
 import { apiConnector } from "../../Service/apiConnector";
 import { mentorEndpoints } from "../../Service/apis";
+import { motion } from "framer-motion";
 import {
   Calendar,
   Clock,
@@ -12,6 +1934,7 @@ import {
   CheckCircle,
   Clock as ClockIcon,
   ChevronRight,
+  ChevronLeft,
   DollarSign,
   FileText,
   Video,
@@ -19,6 +1942,16 @@ import {
   XCircle,
   AlertCircle,
   IndianRupee,
+  X,
+  Check,
+  Loader2,
+  Users,
+  Star,
+  Award,
+  Shield,
+  ExternalLink,
+  MessageSquare,
+  TrendingUp,
 } from "lucide-react";
 
 const MentorBookings = () => {
@@ -27,36 +1960,24 @@ const MentorBookings = () => {
   const [loading, setLoading] = useState({ upcoming: true, completed: true });
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("upcoming");
+  const [hasAnimated, setHasAnimated] = useState(false);
 
-  useEffect(() => {
-    const loadAllBookings = async () => {
-      try {
-        setLoading({ upcoming: true, completed: true });
-        setError(null);
-
-        // Load upcoming bookings
-        const upcomingRes = await apiConnector(
-          "GET",
-          mentorEndpoints.MENTOR_BOOKINGS_UPCOMING
-        );
-        setUpcoming(upcomingRes.data?.bookings || []);
-
-        // Load completed bookings
-        const completedRes = await apiConnector(
-          "GET",
-          mentorEndpoints.MENTOR_COMPLETED_BOOKING
-        );
-        setCompleted(completedRes.data?.bookings || []);
-      } catch (error) {
-        console.log("Error while fetching bookings", error);
-        setError("Failed to load bookings. Please try again.");
-      } finally {
-        setLoading({ upcoming: false, completed: false });
-      }
-    };
-
-    loadAllBookings();
-  }, []);
+  const testimonials = [
+    {
+      name: "Priya Sharma",
+      college: "BITS Pilani • Pre-final Year",
+      rating: 5,
+      review:
+        "I was confused about whether to go for product-based or service-based companies. One session cleared all my doubts. Now I feel much more confident about my preparation.",
+    },
+    {
+      name: "Arjun Patel",
+      college: "IIT Delhi • Final Year",
+      rating: 5,
+      review:
+        "Best mentorship I have received! Reviewed my projects and suggested improvements that made my portfolio stand out. Forever grateful 😊",
+    },
+  ];
 
   // Format date from "2025-12-25" to "Dec 25, 2025"
   const formatDate = (dateStr) => {
@@ -79,19 +2000,19 @@ const MentorBookings = () => {
     return `${formattedHour}:${minutes} ${ampm}`;
   };
 
-  // Get status badge color
+  // Get status badge color - updated for dark theme
   const getStatusColor = (status) => {
     switch (status) {
       case "CONFIRMED":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-500/10 text-green-400 border-green-500/20";
       case "PENDING":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
       case "CANCELLED":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-500/10 text-red-400 border-red-500/20";
       case "COMPLETED":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
     }
   };
 
@@ -115,21 +2036,74 @@ const MentorBookings = () => {
   const getServiceIcon = (serviceType) => {
     switch (serviceType) {
       case "ONE_TO_ONE":
-        return <Video className="w-5 h-5 text-blue-600" />;
+        return <Video className="w-5 h-5 text-blue-400" />;
       case "RESUME_REVIEW":
-        return <FileText className="w-5 h-5 text-purple-600" />;
+        return <FileText className="w-5 h-5 text-purple-400" />;
       default:
-        return <Video className="w-5 h-5 text-gray-600" />;
+        return <Video className="w-5 h-5 text-gray-400" />;
+    }
+  };
+
+  // Initialize animations only once
+  useEffect(() => {
+    if (hasAnimated) return;
+
+    const loadAllBookings = async () => {
+      try {
+        setLoading({ upcoming: true, completed: true });
+        setError(null);
+
+        // Load upcoming bookings
+        const upcomingRes = await apiConnector(
+          "GET",
+          mentorEndpoints.MENTOR_BOOKINGS_UPCOMING
+        );
+        setUpcoming(upcomingRes.data?.bookings || []);
+        
+        // Load completed bookings
+        const completedRes = await apiConnector(
+          "GET",
+          mentorEndpoints.MENTOR_COMPLETED_BOOKING
+        );
+        setCompleted(completedRes.data?.bookings || []);
+      } catch (error) {
+        console.log("Error while fetching bookings", error);
+        setError("Failed to load bookings. Please try again.");
+      } finally {
+        setLoading({ upcoming: false, completed: false });
+      }
+    };
+
+    loadAllBookings();
+    setHasAnimated(true);
+
+    const testimonialInterval = setInterval(() => {
+      // Optional: Add testimonial rotation logic here
+    }, 5000);
+
+    return () => clearInterval(testimonialInterval);
+  }, [hasAnimated]);
+
+  // Handle refresh after reschedule
+  const refreshBookings = async () => {
+    try {
+      const upcomingRes = await apiConnector(
+        "GET",
+        mentorEndpoints.MENTOR_BOOKINGS_UPCOMING
+      );
+      setUpcoming(upcomingRes.data?.bookings || []);
+    } catch (error) {
+      console.error("Error refreshing bookings:", error);
     }
   };
 
   // Loading state
   if (loading.upcoming && loading.completed) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-[#111827] to-[#0b1220] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your bookings...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+          <p className="mt-4 text-gray-400">Loading your bookings...</p>
         </div>
       </div>
     );
@@ -137,16 +2111,18 @@ const MentorBookings = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
-          <div className="text-red-500 mb-4">⚠️</div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+      <div className="min-h-screen bg-gradient-to-br from-[#111827] to-[#0b1220] flex items-center justify-center">
+        <div className="text-center p-8 bg-gradient-to-b from-[#1f2937] to-[#111827] rounded-2xl shadow-2xl border border-white/10">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-red-400" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">
             Error Loading Bookings
           </h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-400 mb-6">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-indigo-500/30"
           >
             Retry
           </button>
@@ -156,152 +2132,125 @@ const MentorBookings = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#111827] to-[#0b1220] text-white p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Bookings</h1>
-          <p className="text-gray-600">
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent mb-3"
+          >
+            My Bookings Dashboard
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-gray-400"
+          >
             Manage all your mentoring sessions - upcoming and completed
-          </p>
+          </motion.p>
         </div>
 
         {/* Stats Cards */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl p-6 border border-white/10 shadow-lg hover:shadow-indigo-500/10 transition-all duration-300"
+          >
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-sm text-gray-600">Upcoming Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{upcoming.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Clock className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
-                {upcoming.filter(b => b.status === 'CONFIRMED').length} Confirmed
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completed Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{completed.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckSquare className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
-                {completed.reduce((sum, b) => sum + b.amount, 0)} Total Revenue
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{upcoming.length + completed.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
-                {upcoming.filter(b => b.serviceType === 'ONE_TO_ONE').length + completed.filter(b => b.serviceType === 'ONE_TO_ONE').length} 1:1 Sessions
-              </p>
-            </div>
-          </div>
-        </div> */}
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Upcoming Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400 mb-2">Upcoming Sessions</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">
                   {upcoming.length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Clock className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
+                <Clock className="w-6 h-6 text-blue-400" />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-sm text-gray-400">
                 {upcoming.filter((b) => b.status === "CONFIRMED").length}{" "}
                 Confirmed
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl p-6 border border-white/10 shadow-lg hover:shadow-green-500/10 transition-all duration-300"
+          >
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-sm text-gray-600">Completed Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400 mb-2">Completed Sessions</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">
                   {completed.length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckSquare className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center">
+                <CheckSquare className="w-6 h-6 text-green-400" />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
-                {completed.reduce((sum, b) => sum + b.amount, 0)} Total Revenue
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-sm text-gray-400">
+                ₹{completed.reduce((sum, b) => sum + (b.amount || 0), 0)} Total Revenue
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl p-6 border border-white/10 shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+          >
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-sm text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400 mb-2">Total Sessions</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">
                   {upcoming.length + completed.length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Calendar className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-purple-400" />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-sm text-gray-400">
                 {upcoming.filter((b) => b.serviceType === "ONE_TO_ONE").length +
                   completed.filter((b) => b.serviceType === "ONE_TO_ONE")
                     .length}{" "}
                 1:1 Sessions
               </p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white rounded-xl shadow-md p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl p-6 border border-white/10 shadow-lg hover:shadow-yellow-500/10 transition-all duration-300"
+          >
+            <div className="flex items-center justify-between mb-6">
               <div>
-                <p className="text-sm text-gray-600">Reviews Received</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-sm text-gray-400 mb-2">Reviews Received</p>
+                <p className="text-2xl md:text-3xl font-bold text-white">
                   {completed.filter((b) => b.review && b.review.rating).length}
                 </p>
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-yellow-600"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
+              <div className="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center">
+                <Star className="w-6 h-6 text-yellow-400" />
               </div>
             </div>
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <p className="text-sm text-gray-600">
+            <div className="pt-4 border-t border-white/10">
+              <p className="text-sm text-gray-400">
                 {completed.length > 0
                   ? `${Math.round(
                       (completed.filter((b) => b.review && b.review.rating)
@@ -312,49 +2261,56 @@ const MentorBookings = () => {
                   : "No reviews yet"}
               </p>
             </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
+        <div className="mb-8">
+          <div className="border-b border-white/10">
             <nav className="-mb-px flex space-x-8">
-              <button
+              <motion.button
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
                 onClick={() => setActiveTab("upcoming")}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
                   activeTab === "upcoming"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-indigo-500 text-indigo-400"
+                    : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-400"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
-                  Upcoming Sessions
+                <div className="flex items-center gap-3">
+                  <Clock className="w-5 h-5" />
+                  <span>Upcoming Sessions</span>
                   {upcoming.length > 0 && (
-                    <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
+                    <span className="bg-indigo-500/20 text-indigo-400 text-xs font-semibold px-2.5 py-1 rounded-full">
                       {upcoming.length}
                     </span>
                   )}
                 </div>
-              </button>
-              <button
+              </motion.button>
+
+              <motion.button
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
                 onClick={() => setActiveTab("completed")}
-                className={`py-3 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-300 ${
                   activeTab === "completed"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-indigo-500 text-indigo-400"
+                    : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-400"
                 }`}
               >
-                <div className="flex items-center gap-2">
-                  <CheckSquare className="w-4 h-4" />
-                  Completed Sessions
+                <div className="flex items-center gap-3">
+                  <CheckSquare className="w-5 h-5" />
+                  <span>Completed Sessions</span>
                   {completed.length > 0 && (
-                    <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
+                    <span className="bg-green-500/20 text-green-400 text-xs font-semibold px-2.5 py-1 rounded-full">
                       {completed.length}
                     </span>
                   )}
                 </div>
-              </button>
+              </motion.button>
             </nav>
           </div>
         </div>
@@ -364,40 +2320,52 @@ const MentorBookings = () => {
           <div>
             {loading.upcoming ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+                <p className="mt-4 text-gray-400">
                   Loading upcoming sessions...
                 </p>
               </div>
             ) : upcoming.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Calendar className="w-10 h-10 text-blue-600" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6 }}
+                className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl shadow-2xl p-12 text-center border border-white/10"
+              >
+                <div className="w-20 h-20 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Calendar className="w-10 h-10 text-blue-400" />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+                <h3 className="text-2xl font-bold text-white mb-3">
                   No Upcoming Sessions
                 </h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
                   You don't have any upcoming mentoring sessions scheduled.
                   Create availability slots to start receiving bookings.
                 </p>
-                <button className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg">
+                <button className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-indigo-500/30">
                   Create Availability Slots
                 </button>
-              </div>
+              </motion.div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {upcoming.map((booking) => (
-                  <BookingCard
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {upcoming.map((booking, index) => (
+                  <motion.div
                     key={booking._id}
-                    booking={booking}
-                    type="upcoming"
-                    formatDate={formatDate}
-                    formatTime={formatTime}
-                    getStatusColor={getStatusColor}
-                    getStatusIcon={getStatusIcon}
-                    getServiceIcon={getServiceIcon}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <BookingCard
+                      booking={booking}
+                      type="upcoming"
+                      formatDate={formatDate}
+                      formatTime={formatTime}
+                      getStatusColor={getStatusColor}
+                      getStatusIcon={getStatusIcon}
+                      getServiceIcon={getServiceIcon}
+                      refreshBookings={refreshBookings}
+                    />
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -406,42 +2374,53 @@ const MentorBookings = () => {
           <div>
             {loading.completed ? (
               <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
+                <p className="mt-4 text-gray-400">
                   Loading completed sessions...
                 </p>
               </div>
             ) : completed.length === 0 ? (
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <CheckSquare className="w-10 h-10 text-green-600" />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6 }}
+                className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl shadow-2xl p-12 text-center border border-white/10"
+              >
+                <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <CheckSquare className="w-10 h-10 text-green-400" />
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-800 mb-3">
+                <h3 className="text-2xl font-bold text-white mb-3">
                   No Completed Sessions
                 </h3>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
                   You haven't completed any mentoring sessions yet. Completed
                   sessions will appear here.
                 </p>
                 <button
                   onClick={() => setActiveTab("upcoming")}
-                  className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-md hover:shadow-lg"
+                  className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-indigo-500/30"
                 >
                   View Upcoming Sessions
                 </button>
-              </div>
+              </motion.div>
             ) : (
-              <div className="space-y-4">
-                {completed.map((booking) => (
-                  <CompletedBookingCard
+              <div className="space-y-6">
+                {completed.map((booking, index) => (
+                  <motion.div
                     key={booking._id}
-                    booking={booking}
-                    formatDate={formatDate}
-                    formatTime={formatTime}
-                    getStatusColor={getStatusColor}
-                    getStatusIcon={getStatusIcon}
-                    getServiceIcon={getServiceIcon}
-                  />
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <CompletedBookingCard
+                      booking={booking}
+                      formatDate={formatDate}
+                      formatTime={formatTime}
+                      getStatusColor={getStatusColor}
+                      getStatusIcon={getStatusIcon}
+                      getServiceIcon={getServiceIcon}
+                    />
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -452,8 +2431,208 @@ const MentorBookings = () => {
   );
 };
 
+// Reschedule Modal Component
+const RescheduleModal = memo(({ booking, onClose, onSuccess }) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    date: "",
+    startTime: "",
+    reason: "",
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await apiConnector(
+        "POST",
+        mentorEndpoints.MENTOR_REQUEST_RESCHEDULE(booking._id),
+        formData
+      );
+
+      if (response.data.success) {
+        onSuccess();
+        onClose();
+      } else {
+        setError(response.data.message || "Failed to request reschedule");
+      }
+    } catch (err) {
+      console.error("Reschedule error:", err);
+      setError(err.response?.data?.message || "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get tomorrow's date for min date
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split("T")[0];
+
+  // Time slots
+  const timeSlots = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+    "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        className="bg-gradient-to-b from-[#111827] to-[#0b1220] rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-white/10"
+      >
+        {/* Modal Header */}
+        <div className="sticky top-0 bg-gradient-to-b from-[#111827] to-[#0b1220] z-10 flex justify-between items-center p-6 border-b border-white/10">
+          <div>
+            <h3 className="text-xl font-bold text-white">Reschedule Session</h3>
+            <p className="text-sm text-gray-400 mt-1">
+              Propose a new time for this session
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/10 rounded-lg transition-all duration-300"
+          >
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <form onSubmit={handleSubmit} className="p-6">
+          {/* Current Booking Info */}
+          <div className="mb-6 p-4 bg-blue-500/10 rounded-xl border border-blue-500/20">
+            <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-blue-400" />
+              Current Session Time
+            </h4>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-400" />
+                <span className="text-sm">
+                  {new Date(booking.slots[0].date).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-400" />
+                <span className="text-sm">
+                  {booking.slots[0].startTime} - {booking.slots[0].endTime}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl"
+            >
+              <p className="text-sm text-red-400">{error}</p>
+            </motion.div>
+          )}
+
+          {/* Date Input */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              New Date
+            </label>
+            <input
+              type="date"
+              required
+              min={minDate}
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+            />
+          </div>
+
+          {/* Time Input */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              New Start Time
+            </label>
+            <select
+              required
+              value={formData.startTime}
+              onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+            >
+              <option value="" className="bg-[#111827]">Select a time</option>
+              {timeSlots.map((time) => (
+                <option key={time} value={time} className="bg-[#111827]">
+                  {new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Reason Input */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Reason for Reschedule (Optional)
+            </label>
+            <textarea
+              value={formData.reason}
+              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+              placeholder="e.g., Unexpected conflict, Availability change..."
+              rows="3"
+              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 resize-none"
+            />
+          </div>
+
+          {/* Modal Footer */}
+          <div className="flex gap-3 pt-6 border-t border-white/10">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="flex-1 px-4 py-3 border border-white/10 text-gray-300 rounded-xl hover:bg-white/10 transition-all duration-300 font-medium disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 px-4 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  Send Request
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+});
+
+RescheduleModal.displayName = 'RescheduleModal';
+
 // Component for Upcoming Booking Card
-const BookingCard = ({
+const BookingCard = memo(({
   booking,
   type,
   formatDate,
@@ -461,242 +2640,254 @@ const BookingCard = ({
   getStatusColor,
   getStatusIcon,
   getServiceIcon,
-}) => (
-  <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-    {/* Card Header */}
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <span
-              className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 ${getStatusColor(
-                booking.status
-              )}`}
-            >
-              {getStatusIcon(booking.status)}
-              {booking.status}
-            </span>
-            <div className="flex items-center gap-1.5 text-blue-200">
-              {getServiceIcon(booking.serviceType)}
-              <span className="text-sm">
-                {booking.serviceType === "ONE_TO_ONE"
-                  ? "1:1 Session"
-                  : "Resume Review"}
-              </span>
+  refreshBookings,
+}) => {
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+
+  // Check if reschedule is already requested
+  const hasPendingReschedule = booking.rescheduleRequest?.status === "PENDING";
+  const rescheduleByMentor = booking.rescheduleRequest?.proposedBy === "MENTOR";
+  const rescheduleByUser = booking.rescheduleRequest?.proposedBy === "USER";
+
+  // Handle reschedule request success
+  const handleRescheduleSuccess = () => {
+    refreshBookings();
+  };
+
+  return (
+    <>
+      <div className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-2xl shadow-xl overflow-hidden border border-white/10 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-indigo-500/20 hover:scale-[1.02]">
+        {/* Card Header */}
+        <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span
+                  className={`px-3 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 ${getStatusColor(
+                    booking.status
+                  )}`}
+                >
+                  {getStatusIcon(booking.status)}
+                  {booking.status}
+                </span>
+                {hasPendingReschedule && rescheduleByMentor && (
+                  <span className="px-3 py-1.5 bg-yellow-500/10 text-yellow-400 rounded-full text-sm font-semibold flex items-center gap-1.5 border border-yellow-500/20">
+                    <ClockIcon className="w-4 h-4" />
+                    Reschedule Pending
+                  </span>
+                )}
+                {hasPendingReschedule && rescheduleByUser && (
+                  <span className="px-3 py-1.5 bg-orange-500/10 text-orange-400 rounded-full text-sm font-semibold flex items-center gap-1.5 border border-orange-500/20">
+                    <AlertCircle className="w-4 h-4" />
+                    User Requested Reschedule
+                  </span>
+                )}
+                <div className="flex items-center gap-1.5 text-indigo-200">
+                  {getServiceIcon(booking.serviceType)}
+                  <span className="text-sm">
+                    {booking.serviceType === "ONE_TO_ONE"
+                      ? "1:1 Session"
+                      : "Resume Review"}
+                  </span>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-white">
+                {booking.user?.name || booking.user?.username || "Anonymous User"}
+              </h3>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-white flex items-center gap-1">
+                <IndianRupee className="w-6 h-6" />
+                {booking.amount || 0}
+              </div>
+              <div className="text-indigo-200 text-sm mt-1">Session Fee</div>
             </div>
           </div>
-          <h3 className="text-xl font-bold text-white">
-            {booking.user?.name || booking.user?.username}
-          </h3>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-bold text-white flex items-center gap-1">
-            <IndianRupee className="w-6 h-6" />
-            {booking.amount}
-          </div>
-          <div className="text-blue-200 text-sm mt-1">Session Fee</div>
-        </div>
-      </div>
-    </div>
 
-    {/* Card Body */}
-    <div className="p-6">
-      {/* Student Info */}
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-blue-600" />
+        {/* Card Body */}
+        <div className="p-6">
+          {/* Student Info */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-white">
+                  {booking.user?.username || "Anonymous"}
+                </h4>
+                <p className="text-sm text-gray-400">{booking.user?.email || "No email provided"}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 bg-white/5 rounded-xl p-4">
+              <div className="flex items-center gap-2">
+                <GraduationCap className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-300">
+                  {booking.user?.college || "College not specified"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-300">
+                  {booking.user?.phone || "N/A"}
+                </span>
+              </div>
+              {booking.user?.graduationYear && (
+                <div className="col-span-2 text-sm text-gray-400">
+                  Graduating in {booking.user?.graduationYear}
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <h4 className="font-semibold text-gray-900">
-              {booking.user?.username}
+
+          {/* Session Details */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold text-white mb-4">
+              Session Details
             </h4>
-            <p className="text-sm text-gray-600">{booking.user?.email}</p>
-          </div>
-        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-indigo-500/10 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Calendar className="w-5 h-5 text-indigo-400" />
+                  <span className="font-medium text-white">Date</span>
+                </div>
+                <p className="text-gray-300 font-medium">
+                  {formatDate(booking.slots?.[0]?.date)}
+                </p>
+              </div>
+              <div className="bg-indigo-500/10 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-indigo-400" />
+                  <span className="font-medium text-white">Time</span>
+                </div>
+                <p className="text-gray-300 font-medium">
+                  {formatTime(booking.slots?.[0]?.startTime)} -{" "}
+                  {formatTime(booking.slots?.[0]?.endTime)}
+                </p>
+              </div>
+            </div>
+            
+            {/* Show proposed reschedule if pending */}
+            {hasPendingReschedule && rescheduleByMentor && (
+              <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                <h5 className="font-semibold text-yellow-400 mb-2 flex items-center gap-2">
+                  <ClockIcon className="w-4 h-4" />
+                  Proposed New Time
+                </h5>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm text-gray-300">
+                      {new Date(booking.rescheduleRequest.proposedDate).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm text-gray-300">
+                      {formatTime(booking.rescheduleRequest.proposedStartTime)}
+                    </span>
+                  </div>
+                </div>
+                {booking.rescheduleRequest.reason && (
+                  <p className="mt-2 text-sm text-yellow-400">
+                    <span className="font-medium">Reason: </span>
+                    {booking.rescheduleRequest.reason}
+                  </p>
+                )}
+                <p className="mt-2 text-xs text-yellow-400/70">
+                  Waiting for user response
+                </p>
+              </div>
+            )}
 
-        <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-xl p-4">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-700">
-              {booking.user?.college}
-            </span>
+            {/* Show user reschedule request */}
+            {hasPendingReschedule && rescheduleByUser && (
+              <div className="mt-4 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                <h5 className="font-semibold text-orange-400 mb-2 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4" />
+                  User Requested Reschedule
+                </h5>
+                {booking.rescheduleRequest.reason && (
+                  <p className="mb-3 text-sm text-orange-400">
+                    <span className="font-medium">Reason: </span>
+                    {booking.rescheduleRequest.reason}
+                  </p>
+                )}
+                <p className="text-xs text-orange-400/70">
+                  You need to take action on this request
+                </p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-gray-500" />
-            <span className="text-sm text-gray-700">
-              {booking.user?.phone || "N/A"}
-            </span>
-          </div>
-          {booking.user?.graduationYear && (
-            <div className="col-span-2 text-sm text-gray-600">
-              Graduating in {booking.user?.graduationYear}
+
+          {/* Action Buttons */}
+          {type === "upcoming" && booking.status === "CONFIRMED" && (
+            <div className="flex gap-3 pt-6 border-t border-white/10">
+              {!hasPendingReschedule ? (
+                <button
+                  onClick={() => setShowRescheduleModal(true)}
+                  className="px-4 py-3 bg-white/5 text-indigo-400 border border-indigo-500/50 rounded-xl hover:bg-indigo-500/10 transition-all duration-300 font-medium hover:scale-105"
+                >
+                  Reschedule
+                </button>
+              ) : rescheduleByMentor ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <ClockIcon className="w-4 h-4" />
+                  Reschedule request sent
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-orange-400">
+                  <AlertCircle className="w-4 h-4" />
+                  User requested reschedule
+                </div>
+              )}
             </div>
           )}
         </div>
-      </div>
 
-      {/* Session Details */}
-      <div className="mb-6">
-        <h4 className="text-lg font-semibold text-gray-800 mb-4">
-          Session Details
-        </h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-blue-50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-5 h-5 text-blue-600" />
-              <span className="font-medium text-gray-800">Date</span>
+        {/* Card Footer */}
+        <div className="bg-white/5 px-6 py-3 border-t border-white/10">
+          <div className="flex justify-between items-center text-sm text-gray-400">
+            <div>
+              Booked on:{" "}
+              {new Date(booking.createdAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </div>
-            <p className="text-gray-700 font-medium">
-              {formatDate(booking.slot?.date)}
-            </p>
-          </div>
-          <div className="bg-blue-50 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <span className="font-medium text-gray-800">Time</span>
+            <div className="flex items-center gap-1">
+              <span className="font-mono text-xs bg-white/10 px-2 py-1 rounded">
+                ID: {booking._id?.slice(-6)}
+              </span>
+              <ChevronRight className="w-4 h-4" />
             </div>
-            <p className="text-gray-700 font-medium">
-              {formatTime(booking.slot?.startTime)} -{" "}
-              {formatTime(booking.slot?.endTime)}
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
-      {type === "upcoming" && (
-        <div className="flex gap-3 pt-6 border-t border-gray-200">
-          <button className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
-            <Video className="w-4 h-4" />
-            Join Session
-          </button>
-          <button className="px-4 py-3 bg-white text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50 transition font-medium">
-            Reschedule
-          </button>
-          <button className="px-4 py-3 bg-white text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition font-medium">
-            Cancel
-          </button>
-        </div>
+      {/* Reschedule Modal */}
+      {showRescheduleModal && (
+        <RescheduleModal
+          booking={booking}
+          onClose={() => setShowRescheduleModal(false)}
+          onSuccess={handleRescheduleSuccess}
+        />
       )}
-    </div>
+    </>
+  );
+});
 
-    {/* Card Footer */}
-    <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-      <div className="flex justify-between items-center text-sm text-gray-600">
-        <div>
-          Booked on:{" "}
-          {new Date(booking.createdAt).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="font-mono text-xs bg-gray-200 px-2 py-1 rounded">
-            ID: {booking._id.slice(-6)}
-          </span>
-          <ChevronRight className="w-4 h-4" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
+BookingCard.displayName = 'BookingCard';
 
-// Component for Completed Booking Card (List View)
-// const CompletedBookingCard = ({ booking, formatDate, formatTime, getStatusColor, getStatusIcon, getServiceIcon }) => (
-//   <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
-//     <div className="p-6">
-//       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-//         {/* Left Section */}
-//         <div className="flex-1">
-//           <div className="flex items-center gap-3 mb-3">
-//             {getServiceIcon(booking.serviceType)}
-//             <h3 className="text-lg font-semibold text-gray-900">
-//               {booking.serviceType === 'ONE_TO_ONE' ? '1:1 Mentoring Session' : 'Resume Review'}
-//             </h3>
-//             <span className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${getStatusColor('COMPLETED')}`}>
-//               {getStatusIcon('COMPLETED')}
-//               COMPLETED
-//             </span>
-//           </div>
-
-//           <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-//             <div className="flex items-center gap-1.5">
-//               <User className="w-4 h-4" />
-//               <span className="font-medium">{booking.user?.name || booking.user?.username}</span>
-//             </div>
-//             <div className="flex items-center gap-1.5">
-//               <Calendar className="w-4 h-4" />
-//               <span>{formatDate(booking.slot?.date)}</span>
-//             </div>
-//             <div className="flex items-center gap-1.5">
-//               <Clock className="w-4 h-4" />
-//               <span>{formatTime(booking.slot?.startTime)}</span>
-//             </div>
-//             <div className="flex items-center gap-1.5">
-//               <GraduationCap className="w-4 h-4" />
-//               <span>{booking.user?.college}</span>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Right Section */}
-//         <div className="flex items-center gap-6">
-//           <div className="text-right">
-//             <div className="text-2xl font-bold text-gray-900 flex items-center gap-1">
-//               <IndianRupee className="w-5 h-5" />
-//               {booking.amount}
-//             </div>
-//             <div className="text-sm text-gray-600">Amount Paid</div>
-//           </div>
-
-//           <div className="text-right">
-//             <div className="text-sm font-medium text-gray-900">
-//               {new Date(booking.createdAt).toLocaleDateString('en-US', {
-//                 month: 'short',
-//                 day: 'numeric'
-//               })}
-//             </div>
-//             <div className="text-xs text-gray-600">Booked Date</div>
-//           </div>
-
-//           <button className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium text-sm">
-//             View Details
-//           </button>
-//         </div>
-//       </div>
-
-//       {/* Payment Info (Collapsible) */}
-//       <div className="mt-4 pt-4 border-t border-gray-100">
-//         <div className="flex items-center justify-between text-sm">
-//           <div className="flex items-center gap-4">
-//             <div className="flex items-center gap-1.5">
-//               <CreditCard className="w-4 h-4 text-gray-500" />
-//               <span className="text-gray-600">Payment ID:</span>
-//               <span className="font-mono text-gray-900">{booking.paymentId}</span>
-//             </div>
-//             <div className="flex items-center gap-1.5">
-//               <span className="text-gray-600">Provider:</span>
-//               <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-//                 {booking.paymentProvider}
-//               </span>
-//             </div>
-//           </div>
-//           <div className="text-sm text-gray-500">
-//             Completed on: {new Date(booking.updatedAt).toLocaleDateString('en-US', {
-//               month: 'short',
-//               day: 'numeric',
-//               year: 'numeric'
-//             })}
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   </div>
-// );
-// Component for Completed Booking Card (List View)
-const CompletedBookingCard = ({
+// Component for Completed Booking Card
+const CompletedBookingCard = memo(({
   booking,
   formatDate,
   formatTime,
@@ -707,14 +2898,14 @@ const CompletedBookingCard = ({
   const hasReview = booking.review && booking.review.rating;
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-gradient-to-br from-[#1f2937] to-[#111827] rounded-xl shadow-lg border border-white/10 hover:border-indigo-500/50 transition-all duration-300 hover:shadow-indigo-500/20">
       <div className="p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           {/* Left Section */}
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               {getServiceIcon(booking.serviceType)}
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-white">
                 {booking.serviceType === "ONE_TO_ONE"
                   ? "1:1 Mentoring Session"
                   : "Resume Review"}
@@ -729,24 +2920,24 @@ const CompletedBookingCard = ({
               </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
               <div className="flex items-center gap-1.5">
                 <User className="w-4 h-4" />
-                <span className="font-medium">
-                  {booking.user?.name || booking.user?.username}
+                <span className="font-medium text-white">
+                  {booking.user?.name || booking.user?.username || "Anonymous"}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
-                <span>{formatDate(booking.slot?.date)}</span>
+                <span>{formatDate(booking.slots?.[0]?.date)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-4 h-4" />
-                <span>{formatTime(booking.slot?.startTime)}</span>
+                <span>{formatTime(booking.slots?.[0]?.startTime)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4" />
-                <span>{booking.user?.college}</span>
+                <span>{booking.user?.college || "College not specified"}</span>
               </div>
             </div>
           </div>
@@ -754,42 +2945,55 @@ const CompletedBookingCard = ({
           {/* Right Section */}
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <div className="text-2xl font-bold text-gray-900 flex items-center gap-1">
+              <div className="text-2xl font-bold text-white flex items-center gap-1">
                 <IndianRupee className="w-5 h-5" />
-                {booking.amount}
+                {booking.amount || 0}
               </div>
-              <div className="text-sm text-gray-600">Amount Paid</div>
+              <div className="text-sm text-gray-400">Amount Paid</div>
             </div>
-
+            
+            {/* Session Date & Time */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-blue-400" />
+                  <span className="font-medium text-gray-300 text-sm">Date</span>
+                </div>
+                <p className="text-gray-300 font-medium text-sm">
+                  {formatDate(booking.slots?.[0]?.date)}
+                </p>
+              </div>
+              <div className="rounded-xl p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="w-4 h-4 text-blue-400" />
+                  <span className="font-medium text-gray-300 text-sm">Time</span>
+                </div>
+                <p className="text-gray-300 font-medium text-sm">
+                  {formatTime(booking.slots?.[0]?.startTime)} -{" "}
+                  {formatTime(booking.slots?.[0]?.endTime)}
+                </p>
+              </div>
+            </div>
+            
             <div className="text-right">
-              <div className="text-sm font-medium text-gray-900">
+              <div className="text-sm font-medium text-white">
                 {new Date(booking.createdAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "numeric",
                 })}
               </div>
-              <div className="text-xs text-gray-600">Booked Date</div>
+              <div className="text-xs text-gray-400">Booked Date</div>
             </div>
-
-            <button className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium text-sm">
-              View Details
-            </button>
           </div>
         </div>
 
         {/* Review Section */}
         {hasReview && (
-          <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+          <div className="mt-4 p-4 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 rounded-xl border border-yellow-500/20">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
-                  <svg
-                    className="w-5 h-5 text-yellow-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
+                <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-400" />
                   Student Review
                 </h4>
 
@@ -800,8 +3004,8 @@ const CompletedBookingCard = ({
                       key={star}
                       className={`w-5 h-5 ${
                         star <= booking.review.rating
-                          ? "text-yellow-500 fill-yellow-500"
-                          : "text-gray-300 fill-gray-300"
+                          ? "text-yellow-400 fill-yellow-400"
+                          : "text-gray-600 fill-gray-600"
                       }`}
                       viewBox="0 0 20 20"
                       fill="currentColor"
@@ -809,7 +3013,7 @@ const CompletedBookingCard = ({
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                     </svg>
                   ))}
-                  <span className="ml-2 font-medium text-gray-700">
+                  <span className="ml-2 font-medium text-white">
                     {booking.review.rating}/5
                   </span>
                 </div>
@@ -817,14 +3021,14 @@ const CompletedBookingCard = ({
                 {/* Review Comment */}
                 {booking.review.comment && (
                   <div className="mt-2">
-                    <p className="text-gray-700 italic">
+                    <p className="text-gray-300 italic">
                       "{booking.review.comment}"
                     </p>
                   </div>
                 )}
 
                 {/* Review Date */}
-                <div className="mt-3 text-sm text-gray-500">
+                <div className="mt-3 text-sm text-gray-400">
                   Reviewed on:{" "}
                   {new Date(booking.review.reviewedAt).toLocaleDateString(
                     "en-US",
@@ -847,24 +3051,12 @@ const CompletedBookingCard = ({
 
         {/* No Review Section */}
         {!hasReview && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
-                  />
-                </svg>
+                <Star className="w-5 h-5 text-gray-500" />
                 <div>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-400">
                     No review yet from student
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
@@ -877,24 +3069,24 @@ const CompletedBookingCard = ({
         )}
 
         {/* Payment Info */}
-        <div className="mt-4 pt-4 border-t border-gray-100">
+        <div className="mt-4 pt-4 border-t border-white/10">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5">
                 <CreditCard className="w-4 h-4 text-gray-500" />
-                <span className="text-gray-600">Payment ID:</span>
-                <span className="font-mono text-gray-900">
-                  {booking.paymentId}
+                <span className="text-gray-400">Payment ID:</span>
+                <span className="font-mono text-gray-300">
+                  {booking.paymentId || "N/A"}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
-                <span className="text-gray-600">Provider:</span>
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                  {booking.paymentProvider}
+                <span className="text-gray-400">Provider:</span>
+                <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded-full text-xs font-medium border border-green-500/20">
+                  {booking.paymentProvider || "N/A"}
                 </span>
               </div>
             </div>
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-gray-400">
               Completed on:{" "}
               {new Date(booking.updatedAt).toLocaleDateString("en-US", {
                 month: "short",
@@ -907,5 +3099,8 @@ const CompletedBookingCard = ({
       </div>
     </div>
   );
-};
+});
+
+CompletedBookingCard.displayName = 'CompletedBookingCard';
+
 export default MentorBookings;

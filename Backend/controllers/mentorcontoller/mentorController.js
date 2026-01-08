@@ -1,5 +1,8 @@
 import Booking from "../../models/Booking.js";
 import MentorProfile from "../../models/MentorProfile.js";
+import sendEmail from "../../utils/sendEmail.js";
+import {mentorApplicationTemplate} from "../../utils/emailTemplates.js";
+
 export const applyMentor = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -57,7 +60,17 @@ export const applyMentor = async (req, res) => {
       offerLetterUrl,
       status: "PENDING",
     });
-
+    console.log("mentor bhai ye le",mentor.user.email);
+    await sendEmail({
+      to: mentor.user.email ,
+      subject: "🎓 Mentor Application Received - PlacementTutor",
+      html: mentorApplicationTemplate({
+        mentorName: mentor.name,
+        currentCompany:mentor.currentCompany,
+        jobTitle:mentor.jobTitle,
+        yearsOfExperience:mentor.yearsOfExperience,
+      }),
+    });
     res.status(201).json({
       success: true,
       message: "Mentor application submitted successfully",
@@ -189,10 +202,10 @@ export const getMentorStatus = async (req, res) => {
       res.status(500).json({ message: "Failed to load dashboard" });
     }
   };
-  export const getMentorAbout = async (req, res) => {
+export const getMentorAbout = async (req, res) => {
     try {
       const userId = req.user.id;
-  
+      console.log(userId);
       // 🔐 Ensure mentor only
       if (req.user.role !== "MENTOR") {
         return res.status(403).json({
@@ -210,7 +223,7 @@ export const getMentorStatus = async (req, res) => {
           message: "Mentor profile not found",
         });
       }
-  
+      console.log("bhej diya")
       return res.status(200).json({
         success: true,
         mentor: {

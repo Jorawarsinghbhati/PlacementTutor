@@ -1,6 +1,8 @@
 import MentorProfile from "../../models/MentorProfile.js";
 import Booking from "../../models/Booking.js";
 import MentorAvailability from "../../models/MentorAvailability.js";
+import { groupSlots } from "../../utils/groupSlots.js";
+import AdminGlobalBlock from "../../models/AdminGlobalBlock.js"
 
 
 export const getAllMentors = async (req, res) => {
@@ -24,7 +26,6 @@ export const getAllMentors = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to load mentors" });
   }
 };
-
 export const getMentorById = async (req, res) => {
   try {
     const mentor = await MentorProfile.findOne({
@@ -44,59 +45,53 @@ export const getMentorById = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to load mentor" });
   }
 };
-
-// export const getMentorAvailability = async (req, res) => {
-//     const { id } = req.params;
-//     const { date } = req.query;
-  
-//     const slots = await MentorAvailability.find({
-//       mentor: id,
-//       date,
-//       lockedUntil: { $lt: new Date() },
-//     }).sort({ startTime: 1 });
-  
-//     res.json({ slots });
-//   };
 export const getMentorAvailabilityUser = async (req, res) => {
   try {
-    console.log("i am reaching here bro...")
     const { mentorId } = req.params;
     const { date } = req.query;
     console.log("mentor id ",mentorId);
+
     if (!date) {
-      return res.status(400).json({
-        success: false,
-        message: "Date is required",
-      });
+      return res.status(400).json({ success: false, message: "Date required" });
     }
 
-    
     const mentorProfile = await MentorProfile.findOne({
       user: mentorId,
       status: "APPROVED",
     });
-
+    
     if (!mentorProfile) {
-      return res.status(404).json({
-        success: false,
-        message: "Mentor not found or not approved",
-      });
+      return res.status(404).json({ success: false, message: "Mentor not found" });
     }
 
     const now = new Date();
-    console.log("mentor id",mentorId);
-    const slots = await MentorAvailability.find({
+
+    let slots = await MentorAvailability.find({
       mentor: mentorId,
       date,
       isBooked: false,
-      $or: [
-        { lockedUntil: null },
-        { lockedUntil: { $lt: now } },
-      ],
+      $or: [{ lockedUntil: null }, { lockedUntil: { $lt: now } }],
     })
-      .select("startTime endTime")
       .sort({ startTime: 1 });
-     console.log(slots);
+
+   
+    const globalBlocks = await AdminGlobalBlock.find({
+      date,
+      isActive: true,
+    });
+    
+
+    if (globalBlocks.length > 0) {
+      slots = slots.filter((slot) => {
+        return !globalBlocks.some((block) => {
+          return (
+            slot.startTime < block.endTime &&
+            slot.endTime > block.startTime
+          );
+        });
+      });
+    }
+    const groupedSlots = groupSlots(slots);
     return res.status(200).json({
       success: true,
       mentor: {
@@ -105,17 +100,19 @@ export const getMentorAvailabilityUser = async (req, res) => {
         sessionPrice: mentorProfile.sessionPrice,
       },
       date,
-      slots, 
+      availability: groupedSlots,
+      globalBlocks: globalBlocks.map((block) => ({
+        startTime: block.startTime,
+        endTime: block.endTime,
+        reason: block.reason || "Unavailable",
+      })),
     });
   } catch (err) {
-    console.error("Get mentor availability error:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch mentor availability",
-    });
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed" });
   }
 };
-
+//done upper one bro.....
 export const getMentorDashboard = async (req, res) => {
   try {
     const mentorUserId = req.user.id;
@@ -174,3 +171,5 @@ export const getMentorBookings = async (req, res) => {
 
   res.json({ bookings });
 };
+
+

@@ -1,4 +1,6 @@
 import User from "../../models/User.js";
+import sendEmail from "../../utils/sendEmail.js";
+import {userWelcomeTemplate} from "../../utils/emailTemplates.js";
 
 export const setUsername = async (req, res) => {
     try {
@@ -62,8 +64,15 @@ export const setGraduation = async (req, res) => {
       user.phone = phone;
   
       await user.save();
-  
-      console.log("Graduation details set for user:", userId);
+      await sendEmail({
+        to: user.email,
+        subject: "🎉 Welcome to PlacementTutor - Your Placement Journey Begins!",
+        html: userWelcomeTemplate({
+          userName: user.name,
+          userEmail: user.email
+        }),
+      });
+
       res.json({ success: true });
     } catch (err) {
       console.error(err);
@@ -92,5 +101,5 @@ export const getMe = async (req, res) => {
       console.error("getMe error:", err);
       res.status(500).json({ success: false });
     }
-  };
+};
   

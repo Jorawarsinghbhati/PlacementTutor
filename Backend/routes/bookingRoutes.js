@@ -1,11 +1,11 @@
 import { Router } from "express";
 import auth from "../middlewares/auth.js";
-import { lockSlot,confirmBooking,getMyBookings } from "../controllers/bookingController.js";
+import { lockSlot,getMyBookings ,submitBookingReview} from "../controllers/bookingController.js";
+
 
 const router = Router();
 
 router.post("/lock", auth, lockSlot);
-router.post("/confirm", auth, confirmBooking);
 router.get("/me",auth,getMyBookings);
-
+router.post("/:bookingId/review", auth, submitBookingReview);
 export default router;

@@ -1,76 +1,11 @@
-
-// import React, { useEffect, useState } from "react";
-// import { apiConnector } from "../../../Service/apiConnector";
-// import { mentorEndpoints } from "../../../Service/apis";
-// import BookingModal from "../Components/BookingModal";
-
-// const Mentorprofile = () => {
-//   const [mentors, setMentors] = useState([]);
-//   const [selectedMentor, setSelectedMentor] = useState(null);
-
-//   useEffect(() => {
-//     const fetchMentors = async () => {
-//       const res = await apiConnector(
-//         "GET",
-//         mentorEndpoints.PUBLIC_MENTORS
-//       );
-//       setMentors(res.data.mentors || []);
-//     };
-//     fetchMentors();
-//   }, []);
-
-//   return (
-//     <div className="min-h-screen bg-gray-900 text-white p-6">
-//       <h1 className="text-2xl font-bold mb-6">Find Your Mentor</h1>
-
-//       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-//         {mentors.map((mentor) => (
-//           <div
-//             key={mentor._id}
-//             className="bg-gray-800 rounded-xl p-5"
-//           >
-//             <h2 className="text-lg font-semibold">{mentor.name}</h2>
-//             <p className="text-sm text-gray-400">
-//               {mentor.jobTitle} @ {mentor.currentCompany}
-//             </p>
-
-//             <p className="mt-3 font-bold">
-//               ₹{mentor.sessionPrice}/hour
-//             </p>
-
-//             <button
-//               onClick={() => setSelectedMentor(mentor)}
-//               className="mt-4 bg-indigo-600 w-full py-2 rounded hover:bg-indigo-700"
-//             >
-//               See Availability
-//             </button>
-//           </div>
-//         ))}
-//       </div>
-
-//       {/* 🔥 Booking Modal */}
-//       {selectedMentor && (
-//         <BookingModal
-//           mentor={selectedMentor}
-//           onClose={() => setSelectedMentor(null)}
-//         />
-//       )}
-//     </div>
-//   );
-// };
-
-// export default Mentorprofile;
-// Pages/User/Mentorprofile.jsx
 import React, { useEffect, useState } from "react";
-import { apiConnector } from "../../../Service/apiConnector";
-import { mentorEndpoints } from "../../../Service/apis";
-import BookingModal from "../Components/BookingModal";
+import { apiConnector } from "../../Service/apiConnector";
+import { mentorEndpoints } from "../../Service/apis";
+import BookingModal from "./Components/BookingModal";
 import { 
   Search, 
-  Filter, 
-  Star, 
-  Briefcase, 
-  MapPin, 
+  Filter,  
+  Briefcase,  
   Award,
   TrendingUp,
   GraduationCap,
@@ -234,7 +169,7 @@ const Mentorprofile = () => {
         </div>
 
         {/* Filters */}
-        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/10">
+         <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-white/10">
           <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -279,7 +214,7 @@ const Mentorprofile = () => {
               )}
             </div>
           )}
-        </div>
+        </div> 
 
         {/* Results count */}
         <div className="flex items-center justify-between mb-6">

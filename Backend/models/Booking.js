@@ -1,178 +1,299 @@
-// models/Booking.js
+
 import mongoose from "mongoose";
 
+
+const rescheduleSchema = new mongoose.Schema(
+  {
+
+    proposedBy: {
+      type: String,
+      enum: ["MENTOR", "USER"],
+      required: true,
+    },
+
+
+    status: {
+      type: String,
+      enum: ["PENDING", "ACCEPTED", "REJECTED", "EXPIRED"],
+      default: "PENDING",
+    },
+
+    oldSlots: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MentorAvailability",
+      },
+    ],
+
+
+    proposedSlots: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MentorAvailability",
+      },
+    ],
+
+   
+    proposedDate: {
+      type: String, // "YYYY-MM-DD"
+      required: true,
+    },
+
+    proposedStartTime: {
+      type: String, // "HH:mm"
+      required: true,
+    },
+
+    reason: {
+      type: String,
+      trim: true,
+    },
+
+    requestedAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    expiresAt: {
+      type: Date, 
+    },
+
+    resolvedAt: {
+      type: Date,
+    },
+  },
+  { _id: false }
+);
+
+
+
+
+const reviewSchema = new mongoose.Schema(
+  {
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    comment: {
+      type: String,
+      trim: true,
+    },
+    reviewedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    approved: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: false }
+);
+
+/* -----------------------------
+   BOOKING SCHEMA
+----------------------------- */
 const bookingSchema = new mongoose.Schema(
   {
+    /* -----------------------------
+       CORE RELATIONS
+    ----------------------------- */
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
     mentor: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
 
-    slot: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "MentorAvailability",
-      required: true,
-      unique: true, // 🔐 CRITICAL: one slot → one booking only
-    },
+    /* -----------------------------
+       SLOT DATA
+    ----------------------------- */
+    slots: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MentorAvailability",
+        required: true,
+      },
+    ],
 
+    /* -----------------------------
+       SESSION INFO
+    ----------------------------- */
     serviceType: {
       type: String,
       enum: ["ONE_TO_ONE", "RESUME_REVIEW"],
       required: true,
     },
 
+    duration: {
+      type: Number, // minutes
+      min: 15,
+      max: 210,
+      required: true,
+    },
+
+    meetingStartTime: {
+      type: Date, // derived from first slot
+    },
+
+    meetingLink: {
+      type: String,
+      default: null,
+    },
+
+    meetingProvider: {
+      type: String,
+      enum: ["ZOOM"],
+      default: null,
+    },
+
+    meetingCreated: {
+      type: Boolean,
+      default: false,
+    },
+
+    meetingEmailSent: {
+      type: Boolean,
+      default: false,
+    },
+
+    /* -----------------------------
+       PAYMENT INFO
+    ----------------------------- */
     amount: {
       type: Number,
       required: true,
       min: 0,
     },
 
-    // status: {
-    //   type: String,
-    //   enum: ["PENDING", "CONFIRMED", "CANCELLED"],
-    //   default: "PENDING",
-    // },
     status: {
       type: String,
-      enum: ["PENDING", "PAYMENT_PENDING", "CONFIRMED", "CANCELLED", "FAILED", "EXPIRED"],
+      enum: [
+        "PENDING",
+        "PAYMENT_PENDING",
+        "CONFIRMED",
+        "CANCELLED",
+        "FAILED",
+        "EXPIRED",
+        "COMPLETED",
+      ],
       default: "PENDING",
+      index: true,
     },
-    //new one bro
+
     razorpayOrderId: {
       type: String,
       default: null,
+      index: true,
+      sparse: true,
     },
 
     paymentId: {
-      type: String, // Razorpay / Stripe / UPI txn id
+      type: String,
       default: null,
     },
 
     paymentProvider: {
       type: String,
-      enum: ["RAZORPAY", "STRIPE", "UPI"],
+      enum: ["RAZORPAY"],
       default: null,
     },
 
-    review: {
-      rating: {
-        type: Number,
-        min: 1,
-        max: 5,
-      },
-      comment: {
-        type: String,
-        trim: true,
-      },
-      reviewedAt: {
-        type: Date,
-      },
+    paymentDetails: {
+      method: String,
+      cardId: String,
+      bank: String,
+      wallet: String,
+      vpa: String,
     },
 
-    //new one
-    paymentDetails: {
-      method: {
-        type: String, // card, upi, netbanking, wallet
-        default: null,
-      },
-      cardId: {
-        type: String, // Razorpay card ID
-        default: null,
-      },
-      bank: {
-        type: String, // Bank name for netbanking
-        default: null,
-      },
-      wallet: {
-        type: String, // Wallet name
-        default: null,
-      },
-      vpa: {
-        type: String, // UPI ID
-        default: null,
-      },
-    },
     paidAt: {
       type: Date,
-      default: null,
     },
 
-    // 🔴 ADDED LOCK EXPIRY FOR PAYMENT
     paymentLockExpiry: {
       type: Date,
-      default: null,
+      index: true,
     },
+
     paymentAttempts: [
       {
         attempt: Number,
         razorpayOrderId: String,
         razorpayPaymentId: String,
-        status: String, // initiated, success, failed
+        status: String,
         amount: Number,
         method: String,
         failureReason: String,
-        timestamp: { type: Date, default: Date.now },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
 
+    /* -----------------------------
+       RESCHEDULE
+    ----------------------------- */
+    rescheduleRequest: rescheduleSchema,
 
+    /* -----------------------------
+       REVIEW
+    ----------------------------- */
+    review: reviewSchema,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-
-
-// A user cannot create two active bookings for same slot
-bookingSchema.index(
-  { user: 1, slot: 1 },
-  { unique: true }
-);
-
-// Fast queries for dashboards
+/* -----------------------------
+   INDEXES
+----------------------------- */
 bookingSchema.index({ mentor: 1, createdAt: -1 });
 bookingSchema.index({ user: 1, createdAt: -1 });
+bookingSchema.index({ slots: 1 });
 
-// 🔴 ADDED NEW INDEXES FOR PAYMENT QUERIES
-bookingSchema.index({ status: 1, createdAt: -1 }); // For pending payments
-bookingSchema.index({ razorpayOrderId: 1 }, { sparse: true }); // For payment verification
-bookingSchema.index({ paymentLockExpiry: 1 }); // For cleanup of expired payments
-
-// 🔴 ADD VIRTUAL FIELD TO CHECK IF PAYMENT IS EXPIRED
+/* -----------------------------
+   VIRTUALS
+----------------------------- */
 bookingSchema.virtual("isPaymentExpired").get(function () {
-  if (!this.paymentLockExpiry) return false;
-  return new Date() > this.paymentLockExpiry;
+  return this.paymentLockExpiry && new Date() > this.paymentLockExpiry;
 });
 
-// 🔴 ADD METHOD TO ADD PAYMENT ATTEMPT
+/* -----------------------------
+   METHODS
+----------------------------- */
 bookingSchema.methods.addPaymentAttempt = function (attemptData) {
   this.paymentAttempts.push(attemptData);
   return this.save();
 };
 
-// 🔴 ADD METHOD TO UPDATE PAYMENT STATUS
-bookingSchema.methods.updatePaymentStatus = function (status, paymentData = {}) {
+bookingSchema.methods.updatePaymentStatus = function (
+  status,
+  paymentData = {}
+) {
   this.status = status;
-  
+
   if (status === "CONFIRMED") {
     this.paidAt = new Date();
     this.paymentId = paymentData.paymentId || null;
-    this.paymentProvider = paymentData.paymentProvider || "RAZORPAY";
+    this.paymentProvider = "RAZORPAY";
     this.paymentDetails = paymentData.paymentDetails || {};
   }
-  
+
   return this.save();
 };
 
-// 🔴 ADD STATIC METHOD TO FIND EXPIRED PAYMENTS
+/* -----------------------------
+   STATICS
+----------------------------- */
 bookingSchema.statics.findExpiredPayments = function () {
   return this.find({
     status: "PAYMENT_PENDING",

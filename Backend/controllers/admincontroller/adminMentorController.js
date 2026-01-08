@@ -95,3 +95,94 @@ export const rejectMentor = async (req, res) => {
       });
   }
 };
+
+export const getAllMentorsForAdmin = async (req, res) => {
+  try {
+    const mentors = await MentorProfile.aggregate([
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+
+      {
+        $project: {
+          mentorId: "$user._id",
+
+          // User info
+          name: "$user.name",
+          email: "$user.email",
+          role: "$user.role",
+          createdAt: "$user.createdAt",
+
+          // Mentor profile
+          college: 1,
+          currentCompany: 1,
+          jobTitle: 1,
+          yearsOfExperience: 1,
+          expertise: 1,
+          sessionPrice: 1,
+          offerLetterUrl: 1,
+          status: 1, // PENDING / APPROVED / REJECTED
+        },
+      },
+
+      { $sort: { createdAt: -1 } },
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: mentors.length,
+      data: mentors,
+    });
+  } catch (error) {
+    console.error("Admin get mentors error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch mentors",
+    });
+  }
+};
+export const rejectMentorAndConvertToUser = async (req, res) => {
+  try {
+    const { mentorId } = req.params;
+    const { reason } = req.body;
+    console.log("bhai pahuch to rha hu yrr baki tu dekh..");
+    // 1️⃣ Find mentor profile
+    const mentorProfile = await MentorProfile.findOne({
+      user: mentorId,
+    });
+    console.log("ye le bhai ",mentorProfile)
+    if (!mentorProfile) {
+      return res.status(404).json({
+        success: false,
+        message: "Mentor profile not found",
+      });
+    }
+
+    // 2️⃣ Update mentor profile status
+    mentorProfile.status = "REJECTED";
+    if (reason) mentorProfile.rejectionReason = reason;
+    await mentorProfile.save();
+
+    // 3️⃣ Downgrade role → USER
+    await User.findByIdAndUpdate(mentorId, {
+      role: "USER",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Mentor rejected and converted back to USER",
+    });
+  } catch (error) {
+    console.error("Reject mentor error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to reject mentor",
+    });
+  }
+};

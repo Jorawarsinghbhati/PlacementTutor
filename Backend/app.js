@@ -9,7 +9,11 @@ import adminRoutes from "./routes/adminRoutes.js";
 import mentorRoutes from "./routes/mentorRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
-import userpaymentroutes from "./routes/userpaymentroutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import "./cron/createMeetingBefore10Min.js";
+import publicRoutes from "./routes/publicRoutes.js"
+// import "./cron/expireRescheduleRequests.js";
+
 connectDB();
 const app = express();
 app.use(
@@ -25,5 +29,9 @@ app.use("/admin", adminRoutes);
 app.use("/mentor", mentorRoutes);
 app.use("/booking", bookingRoutes);
 app.use("/user", userRoutes);
-app.use("/payment",userpaymentroutes);
+app.use("/payment", paymentRoutes);
+app.use("/public",publicRoutes);
+
+
+
 export default app;

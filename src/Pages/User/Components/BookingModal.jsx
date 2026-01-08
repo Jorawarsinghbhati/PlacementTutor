@@ -1,11 +1,12 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { Slider } from "antd"; // Add Ant Design Slider
 import { apiConnector } from "../../../Service/apiConnector";
-import { mentorEndpoints, bookingEndpoints } from "../../../Service/apis";
+import { mentorEndpoints, bookingEndpoints, paymentEndpoints } from "../../../Service/apis";
 import { useNavigate } from "react-router-dom";
 import {
   X,
   Calendar,
-  Clock,
+  Clock as ClockIcon,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
@@ -14,14 +15,17 @@ import {
   Briefcase,
   Video,
   FileText,
-  Loader,  // ADD THIS
-  Shield,  // ADD THIS
-  CreditCard,  // ADD THIS
-  Smartphone,  // ADD THIS
-  Wallet,  // ADD THIS
-  Check,  // ADD THIS
-  XCircle,  // ADD THIS
-  RefreshCw,  // ADD THIS
+  Loader,
+  Shield,
+  CreditCard,
+  Smartphone,
+  Wallet,
+  Check,
+  XCircle,
+  RefreshCw,
+  Plus,  // Added
+  Minus,
+  IndianRupee, // Added
 } from "lucide-react";
 
 const BookingModal = ({ mentor, onClose }) => {
@@ -34,33 +38,59 @@ const BookingModal = ({ mentor, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [duration, setDuration] = useState(60); // Default 60 minutes
+  const [availableDuration, setAvailableDuration] = useState(60); 
 
-  //new one bro
+  // Payment states
   const [booking, setBooking] = useState(null);
   const [paymentStatus, setPaymentStatus] = useState("pending"); // pending, processing, success, failed
   const [razorpayKey, setRazorpayKey] = useState("");
 
   const months = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
   ];
 
   const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  // Load Razorpay key on component mount
+  useEffect(() => {
+    const loadRazorpayKey = async () => {
+      try {
+        const response = await apiConnector("GET", paymentEndpoints.PAYMENT_KEY);
+        if (response.data.success) {
+          setRazorpayKey(response.data.key);
+          console.log("✅ Razorpay key loaded");
+        }
+      } catch (error) {
+        console.error("Error loading Razorpay key:", error);
+      }
+    };
+    loadRazorpayKey();
+  }, []);
+
+  useEffect(() => {
+    if (selectedSlot) {
+      // Calculate available duration from selected slot
+      const startTime = new Date(`2000-01-01T${selectedSlot.startTime}:00`);
+      const endTime = new Date(`2000-01-01T${selectedSlot.endTime}:00`);
+      const diffMinutes = Math.round((endTime - startTime) / (1000 * 60));
+      setAvailableDuration(diffMinutes);
+      
+      // Reset duration if it exceeds available duration
+      if (duration > diffMinutes) {
+        setDuration(Math.min(diffMinutes, 60));
+      }
+    }
+  }, [selectedSlot, duration]);
+
+  const calculatePrice = useCallback((minutes) => {
+    const perMinuteRate = mentor.sessionPrice / 60;
+    return Math.round(perMinuteRate * minutes);
+  }, [mentor.sessionPrice]);
+
   const formatDate = (year, month, day) => {
-    return `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      day
-    ).padStart(2, "0")}`;
+    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
 
   const getDaysInMonth = (year, month) => {
@@ -76,12 +106,13 @@ const BookingModal = ({ mentor, onClose }) => {
 
     setLoading(true);
     try {
+      console.log(`Fetching slots for mentor ${mentorUserId} on date ${date}...`);
       const res = await apiConnector(
         "GET",
         mentorEndpoints.MENTOR_AVAILABILITY(mentorUserId, date)
       );
-      console.log("Fetched slots:", res);
-      setSlots(res.data.slots || []);
+      console.log("✅ Slots fetched:", res.data.availability);
+      setSlots(res.data.availability || []);
     } catch (error) {
       console.error("Error fetching slots:", error);
     } finally {
@@ -93,150 +124,223 @@ const BookingModal = ({ mentor, onClose }) => {
     const selectedDate = formatDate(currentYear, currentMonth, day);
     setDate(selectedDate);
     fetchSlots(selectedDate);
+    setSelectedSlot(null);
   };
 
-  // const handleContinue = () => {
-  //   // if (!selectedSlot) return;
-  //   // setStep(2);
-  //   //new one bro...
-
-  // };
-  //new one yrr
-  // REPLACE your existing handleContinue function (around line 80-90):
+  // Step 1: Create booking
   const handleContinue = async () => {
-    if (!selectedSlot) return;
+    if (!selectedSlot || duration < 15) return;
 
     setLoading(true);
     try {
-      // Create booking first
       const bookingRes = await apiConnector(
         "POST",
         bookingEndpoints.LOCK_SLOT,
         {
-          slotId: selectedSlot._id,
-          mentorId: mentor._id,
-          serviceType: mentor.serviceType,
-          amount: mentor.sessionPrice,
+          date:date,
+          mentorId: mentor.user,
+          startTime: selectedSlot.startTime,
+          serviceType: mentor.serviceType || "ONE_TO_ONE",
+          duration:duration,
         }
       );
 
-      setBooking(bookingRes.data.booking);
-      setStep(2); // Move to confirmation step
+      if (bookingRes.data.success) {
+        setBooking(bookingRes.data.booking);
+        console.log("✅ Booking created:", bookingRes.data.booking);
+        setStep(2); // Move to confirmation step
+      } else {
+        throw new Error(bookingRes.data.message || "Failed to create booking");
+      }
     } catch (error) {
       console.error("Error creating booking:", error);
-      alert("Failed to create booking. Please try again.");
+      
+      // Handle specific error types
+      const errorType = error.response?.data?.errorType;
+      const errorMessage = error.response?.data?.message || "Failed to create booking";
+
+      switch (errorType) {
+        case "ALREADY_BOOKED":
+          alert(`❌ ${errorMessage}\n\nThis slot has been booked by someone else.`);
+          fetchSlots(date);
+          setSelectedSlot(null);
+          break;
+        case "LOCKED_BY_OTHER":
+          const minutesLeft = error.response?.data?.lockExpiresIn;
+          alert(`⏳ ${errorMessage}\n\nPlease wait ${minutesLeft} minutes or select another time.`);
+          fetchSlots(date);
+          setSelectedSlot(null);
+          break;
+        case "EXISTING_PENDING_BOOKING":
+          alert(`⚠️ ${errorMessage}\n\nYou already have a pending booking with this mentor.`);
+          break;
+        default:
+          alert(`❌ ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // const handlePayment = async () => {
-  //   try {
-  //     const res = await apiConnector("POST", bookingEndpoints.LOCK_SLOT, {
-  //       slotId: selectedSlot._id,
-  //     });
-
-  //     navigate("/payment", {
-  //       state: {
-  //         mentor,
-  //         slot: res.data.slot,
-  //       },
-  //     });
-  //   } catch (error) {
-  //     console.error("Error locking slot:", error);
-  //   }
-  // };
-  // DELETE your old handlePayment function and ADD this NEW one:
+  // Step 2: Handle payment
   const handlePayment = async () => {
-    if (!booking || !razorpayKey) return;
+    if (!booking || !razorpayKey) {
+      alert("Payment system not ready. Please try again.");
+      return;
+    }
 
     setLoading(true);
     setPaymentStatus("processing");
 
     try {
       // 1. Create Razorpay order
-      const orderRes = await apiConnector("POST", "/payment/create-order", {
-        slotId: selectedSlot._id,
-        amount: mentor.sessionPrice,
+      console.log("Creating Razorpay order...",selectedSlot._id,booking._id);
+      const orderRes = await apiConnector("POST", paymentEndpoints.CREATE_ORDER, {
         bookingId: booking._id,
       });
 
+      if (!orderRes.data.success) {
+        throw new Error(orderRes.data.message || "Failed to create payment order");
+      }
+
       const order = orderRes.data.order;
 
-      // 2. Load Razorpay script
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      // 2. Load Razorpay script if not already loaded
+      if (!window.Razorpay) {
+        await loadRazorpayScript();
+      }
 
-      script.onload = () => {
-        const options = {
-          key: razorpayKey,
-          amount: order.amount,
-          currency: order.currency,
-          name: "Mentor Session Booking",
-          description: `Session with ${mentor.name}`,
-          order_id: order.id,
-          handler: async function (response) {
-            // Payment successful
-            try {
-              // Verify payment on backend
-              const verifyRes = await apiConnector("POST", "/payment/verify", {
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_signature: response.razorpay_signature,
-                bookingId: booking._id,
-              });
+      // 3. Open Razorpay checkout
+      openRazorpayCheckout(order);
 
-              if (verifyRes.data.success) {
-                setPaymentStatus("success");
-                setStep(3); // Move to success step
-              } else {
-                setPaymentStatus("failed");
-              }
-            } catch (error) {
-              console.error("Payment verification failed:", error);
-              setPaymentStatus("failed");
-            } finally {
-              setLoading(false);
-            }
-          },
-          prefill: {
-            name: localStorage.getItem("userName") || "",
-            email: localStorage.getItem("userEmail") || "",
-            contact: "",
-          },
-          notes: {
-            bookingId: booking._id,
-            mentorId: mentor._id,
-          },
-          theme: {
-            color: "#4f46e5",
-          },
-          modal: {
-            ondismiss: function () {
-              // User closed the modal without payment
-              setPaymentStatus("pending");
-              setLoading(false);
-            },
-          },
-        };
-
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-      };
-
-      script.onerror = () => {
-        console.error("Failed to load Razorpay script");
-        setPaymentStatus("failed");
-        setLoading(false);
-      };
-
-      document.body.appendChild(script);
     } catch (error) {
       console.error("Payment initiation failed:", error);
       setPaymentStatus("failed");
       setLoading(false);
+      alert(error.response?.data?.message || "Failed to initiate payment");
     }
   };
+
+  // Helper: Load Razorpay script
+  const loadRazorpayScript = () => {
+    return new Promise((resolve, reject) => {
+      if (window.Razorpay) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+
+      script.onload = () => {
+        console.log("✅ Razorpay script loaded");
+        resolve();
+      };
+
+      script.onerror = () => {
+        console.error("Failed to load Razorpay script");
+        reject(new Error("Failed to load payment system"));
+      };
+
+      document.body.appendChild(script);
+    });
+  };
+
+  // Helper: Open Razorpay modal
+  const openRazorpayCheckout = (order) => {
+    const options = {
+      key: razorpayKey,
+      amount: order.amount,
+      currency: order.currency,
+      name: "MentorConnect",
+      description: `Session with ${mentor.name}`,
+      order_id: order.id,
+      handler: async function (response) {
+        console.log("Payment successful:", response);
+        await verifyPayment(response);
+      },
+      prefill: {
+        name: localStorage.getItem("userName") || "",
+        email: localStorage.getItem("userEmail") || "",
+        contact: localStorage.getItem("userPhone") || "",
+      },
+      notes: {
+        bookingId: booking._id,
+        mentorId: mentor._id,
+        slotId: selectedSlot._id,
+      },
+      theme: {
+        color: "#4f46e5",
+      },
+      modal: {
+        ondismiss: function () {
+          console.log("Payment modal dismissed");
+          setPaymentStatus("pending");
+          setLoading(false);
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+    setLoading(false);
+  };
+
+  // Verify payment after successful transaction
+  const verifyPayment = async (paymentResponse) => {
+    setLoading(true);
+    try {
+      const verifyRes = await apiConnector("POST", paymentEndpoints.VERIFY_PAYMENT, {
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+        bookingId: booking._id,
+      });
+
+      if (verifyRes.data.success) {
+        setPaymentStatus("success");
+        setStep(3); // Move to success step
+        
+        // Update booking with new status
+        if (verifyRes.data.booking) {
+          setBooking(verifyRes.data.booking);
+        }
+      } else {
+        setPaymentStatus("failed");
+        alert("Payment verification failed. Please contact support.");
+      }
+    } catch (error) {
+      console.error("Payment verification failed:", error);
+      setPaymentStatus("failed");
+      alert("Payment verification failed. Please check your booking status.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Retry payment
+  const handleRetryPayment = () => {
+    setPaymentStatus("pending");
+    handlePayment();
+  };
+
+  // Start new booking
+  const handleNewBooking = () => {
+    setStep(1);
+    setBooking(null);
+    setPaymentStatus("pending");
+    setSelectedSlot(null);
+    setDate("");
+    setSlots([]);
+  };
+
+  // Navigate to bookings page
+  const handleViewBookings = () => {
+    onClose();
+    navigate("/dashboard/Booking");
+  };
+
   const formatTime = (timeString) => {
     if (!timeString) return "";
     const [hours, minutes] = timeString.split(":");
@@ -251,12 +355,10 @@ const BookingModal = ({ mentor, onClose }) => {
     const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const days = [];
 
-    // Empty cells for days before the first day of month
     for (let i = 0; i < firstDay; i++) {
       days.push(null);
     }
 
-    // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       days.push(day);
     }
@@ -296,23 +398,128 @@ const BookingModal = ({ mentor, onClose }) => {
       setCurrentMonth(currentMonth + 1);
     }
   };
-  useEffect(() => {
-    const loadRazorpayKey = async () => {
-      try {
-        // You need to create this endpoint - see step 6 below
-        const response = await apiConnector("GET", "/payment/key");
-        setRazorpayKey(response.data.key);
-      } catch (error) {
-        console.error("Error loading Razorpay key:", error);
-      }
-    };
-    loadRazorpayKey();
-  }, []);
+
+  const renderDurationSelector = () => (
+    <div className="bg-white/5 rounded-xl p-6 border border-white/10 mt-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <ClockIcon size={20} className="text-green-400" />
+          <div>
+            <h3 className="text-lg font-semibold">Session Duration</h3>
+            <p className="text-sm text-gray-400">
+              Select how long you want the session to be
+            </p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-green-400">
+            {duration} min
+          </p>
+          <p className="text-sm text-gray-400">
+            ₹{calculatePrice(duration)}
+          </p>
+        </div>
+      </div>
+
+      {/* Duration Slider */}
+      <div className="mb-6">
+        <Slider
+          min={15}
+          max={availableDuration}
+          step={15}
+          value={duration}
+          onChange={setDuration}
+          tooltip={{
+            formatter: (value) => `${value} minutes (₹${calculatePrice(value)})`,
+            placement: "top"
+          }}
+          trackStyle={{ backgroundColor: "#4f46e5" }}
+          handleStyle={{ borderColor: '#4f46e5' }}
+          railStyle={{ backgroundColor: '#374151' }}
+        />
+        
+        <div className="flex justify-between text-sm text-gray-400 mt-2">
+          <span>15 min</span>
+          <span>Available: {availableDuration} min</span>
+        </div>
+      </div>
+
+      {/* Quick Duration Buttons */}
+      <div className="grid grid-cols-4 gap-3">
+        {[15, 30, 45, 60, 90, 120].filter(min => min <= availableDuration).map((min) => (
+          <button
+            key={min}
+            onClick={() => setDuration(min)}
+            className={`px-4 py-3 rounded-lg border transition-all duration-200 ${
+              duration === min
+                ? "border-indigo-500 bg-indigo-500/20"
+                : "border-white/10 hover:border-indigo-500/50"
+            }`}
+          >
+            <div className="text-center">
+              <p className="font-semibold">{min} min</p>
+              <p className="text-xs text-gray-400 mt-1">₹{calculatePrice(min)}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Duration Controls */}
+      <div className="flex items-center justify-center gap-4 mt-6">
+        <button
+          onClick={() => setDuration(prev => Math.max(15, prev - 15))}
+          disabled={duration <= 15}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Minus size={20} />
+        </button>
+        
+        <div className="text-center">
+          <p className="text-sm text-gray-400">Duration</p>
+          <p className="text-2xl font-bold">{duration} minutes</p>
+        </div>
+        
+        <button
+          onClick={() => setDuration(prev => Math.min(availableDuration, prev + 15))}
+          disabled={duration >= availableDuration}
+          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus size={20} />
+        </button>
+      </div>
+
+      {/* Price Breakdown */}
+      <div className="mt-6 pt-6 border-t border-white/10">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="text-sm text-gray-400">Hourly Rate</p>
+            <p className="text-lg">₹{mentor.sessionPrice}/hour</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-400">Per Minute</p>
+            <p className="text-lg">₹{Math.round(mentor.sessionPrice / 60)}/min</p>
+          </div>
+        </div>
+        
+        <div className="mt-4 p-3 bg-white/5 rounded-lg">
+          <div className="flex justify-between text-sm">
+            <span>Selected Duration:</span>
+            <span className="font-semibold">{duration} minutes</span>
+          </div>
+          <div className="flex justify-between text-lg font-bold mt-2">
+            <span>Total Amount:</span>
+            <span className="text-green-400">₹{calculatePrice(duration)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-b from-[#111827] to-[#0b1220] w-full max-w-4xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+      <div className="bg-gradient-to-b from-[#111827] to-[#0b1220] w-full max-w-4xl rounded-2xl overflow-hidden border border-white/10 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
-        <div className="border-b border-white/10 p-6">
+        <div className="sticky top-0 bg-gradient-to-b from-[#111827] to-[#0b1220] border-b border-white/10 p-6 z-10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
@@ -324,16 +531,11 @@ const BookingModal = ({ mentor, onClose }) => {
                 <h2 className="text-2xl font-bold">
                   Book Session with {mentor.name}
                 </h2>
-                {/* <p className="text-gray-400 text-sm">Step {step} of 2</p> */}
                 <p className="text-gray-400 text-sm">
                   {step === 1 && "Step 1: Select Date & Time"}
                   {step === 2 && "Step 2: Confirm Booking & Payment"}
-                  {step === 3 &&
-                    paymentStatus === "success" &&
-                    "✅ Booking Confirmed!"}
-                  {step === 3 &&
-                    paymentStatus === "failed" &&
-                    "❌ Payment Failed"}
+                  {step === 3 && paymentStatus === "success" && "✅ Booking Confirmed!"}
+                  {step === 3 && paymentStatus === "failed" && "❌ Payment Failed"}
                 </p>
               </div>
             </div>
@@ -349,8 +551,8 @@ const BookingModal = ({ mentor, onClose }) => {
           <div className="mt-6 h-2 bg-white/5 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500"
-              style={{
-                width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
+              style={{ 
+                width: step === 1 ? "33%" : step === 2 ? "66%" : "100%" 
               }}
             ></div>
           </div>
@@ -432,61 +634,9 @@ const BookingModal = ({ mentor, onClose }) => {
                 </div>
 
                 {/* Time Slots Section */}
-                {/* <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Clock size={20} className="text-blue-400" />
-                    <div>
-                      <h3 className="text-lg font-semibold">Available Slots</h3>
-                      <p className="text-sm text-gray-400">
-                        {date ? `Available time slots for ${date}` : 'Select a date first'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {loading ? (
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-4"></div>
-                      <p className="text-gray-400">Loading available slots...</p>
-                    </div>
-                  ) : slots.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                        <Clock size={24} className="text-gray-400" />
-                      </div>
-                      <p className="text-gray-400">
-                        {date 
-                          ? 'No available slots for this date'
-                          : 'Select a date to view available time slots'
-                        }
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-3">
-                      {slots.map((slot) => (
-                        <button
-                          key={slot._id}
-                          onClick={() => setSelectedSlot(slot)}
-                          className={`p-4 rounded-xl border transition-all duration-300 ${
-                            selectedSlot?._id === slot._id
-                              ? 'border-indigo-500 bg-indigo-500/10'
-                              : 'border-white/10 hover:border-indigo-500/50 hover:bg-white/5'
-                          }`}
-                        >
-                          <div className="text-center">
-                            <p className="font-semibold text-lg">
-                              {formatTime(slot.startTime)}
-                            </p>
-                            <p className="text-sm text-gray-400">to {formatTime(slot.endTime)}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div> */}
-                {/* Time Slots Section */}
                 <div className="bg-white/5 rounded-xl p-6 border border-white/10">
                   <div className="flex items-center gap-2 mb-6">
-                    <Clock size={20} className="text-blue-400" />
+                    <ClockIcon size={20} className="text-blue-400" />
                     <div>
                       <h3 className="text-lg font-semibold">Available Slots</h3>
                       <p className="text-sm text-gray-400">
@@ -500,14 +650,12 @@ const BookingModal = ({ mentor, onClose }) => {
                   {loading ? (
                     <div className="flex flex-col items-center justify-center py-8">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mb-4"></div>
-                      <p className="text-gray-400">
-                        Loading available slots...
-                      </p>
+                      <p className="text-gray-400">Loading available slots...</p>
                     </div>
                   ) : slots.length === 0 ? (
                     <div className="text-center py-8">
                       <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
-                        <Clock size={24} className="text-gray-400" />
+                        <ClockIcon size={24} className="text-gray-400" />
                       </div>
                       <p className="text-gray-400">
                         {date
@@ -519,7 +667,7 @@ const BookingModal = ({ mentor, onClose }) => {
                     <div className="flex flex-wrap gap-3">
                       {slots.map((slot) => (
                         <button
-                          key={slot._id}
+                          key={`${slot.startTime}-${slot.endTime}`}
                           onClick={() => setSelectedSlot(slot)}
                           className={`p-4 rounded-xl border transition-all duration-300 ${
                             selectedSlot?._id === slot._id
@@ -539,26 +687,17 @@ const BookingModal = ({ mentor, onClose }) => {
                   )}
                 </div>
               </div>
+              
+              {/* Duration Selector */}
+              {selectedSlot && renderDurationSelector()}
 
               {/* Continue Button */}
               <div className="flex justify-end">
-                {/* <button
-                  onClick={handleContinue}
-                  disabled={!selectedSlot}
-                  className={`px-8 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                    selectedSlot
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-105"
-                      : "bg-gray-700 cursor-not-allowed"
-                  }`}
-                >
-                  Continue to Payment
-                  <ChevronRight size={20} />
-                </button> */}
                 <button
                   onClick={handleContinue}
-                  disabled={!selectedSlot || loading}
+                  disabled={!selectedSlot || duration < 15 || loading}
                   className={`px-8 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 ${
-                    selectedSlot && !loading
+                    selectedSlot && duration >= 15 && !loading
                       ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:scale-105"
                       : "bg-gray-700 cursor-not-allowed"
                   }`}
@@ -570,7 +709,7 @@ const BookingModal = ({ mentor, onClose }) => {
                     </>
                   ) : (
                     <>
-                      Continue to Payment
+                      Continue to Payment 
                       <ChevronRight size={20} />
                     </>
                   )}
@@ -579,7 +718,7 @@ const BookingModal = ({ mentor, onClose }) => {
             </div>
           )}
 
-          {/* STEP 2: Confirm Booking */}
+          {/* STEP 2: Confirm & Pay */}
           {step === 2 && (
             <div className="space-y-6">
               {/* Session Details Card */}
@@ -600,9 +739,9 @@ const BookingModal = ({ mentor, onClose }) => {
                   </div>
                   <div className="text-right">
                     <p className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                      ₹{mentor.sessionPrice}
+                       ₹{calculatePrice(duration)}
                     </p>
-                    <p className="text-sm text-gray-400">One Hour Session</p>
+                    <p className="text-sm text-gray-400">Total Amount</p>
                   </div>
                 </div>
 
@@ -620,7 +759,7 @@ const BookingModal = ({ mentor, onClose }) => {
 
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                        <Clock size={20} className="text-blue-400" />
+                        <ClockIcon size={20} className="text-blue-400" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">Time Slot</p>
@@ -633,34 +772,18 @@ const BookingModal = ({ mentor, onClose }) => {
                   </div>
 
                   <div className="space-y-4">
-                    {/* <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                        <DollarSign size={20} className="text-green-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-400">Payment Status</p>
-                        <p className="font-semibold text-green-400">
-                          To be processed
-                        </p>
-                      </div>
-                    </div> */}
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                        <DollarSign size={20} className="text-green-400" />
+                        <IndianRupee size={20} className="text-green-400" />
                       </div>
                       <div>
                         <p className="text-sm text-gray-400">Payment Status</p>
-                        <p
-                          className={`font-semibold ${
-                            paymentStatus === "success"
-                              ? "text-green-400"
-                              : paymentStatus === "failed"
-                              ? "text-red-400"
-                              : paymentStatus === "processing"
-                              ? "text-yellow-400"
-                              : "text-blue-400"
-                          }`}
-                        >
+                        <p className={`font-semibold ${
+                          paymentStatus === "success" ? "text-green-400" :
+                          paymentStatus === "failed" ? "text-red-400" :
+                          paymentStatus === "processing" ? "text-yellow-400" :
+                          "text-blue-400"
+                        }`}>
                           {paymentStatus === "success" && "✅ Paid"}
                           {paymentStatus === "failed" && "❌ Failed"}
                           {paymentStatus === "processing" && "⏳ Processing"}
@@ -680,102 +803,42 @@ const BookingModal = ({ mentor, onClose }) => {
                       <div>
                         <p className="text-sm text-gray-400">Session Type</p>
                         <p className="font-semibold">
-                          {mentor.serviceType === "ONE_TO_ONE"
-                            ? "1:1 Video Call"
-                            : "Resume Review"}
+                          {mentor.serviceType === "Resume_Review"
+                            ?"Resume Review" 
+                            : "1:1 Video Call"}
                         </p>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              {/* ADD this NEW section in Step 2 AFTER the Session Details Card */}
-              {/* Payment Methods */}
-              <div className="bg-white/5 rounded-xl p-6 border border-white/10">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-lg font-semibold">Payment Methods</h3>
-                    <p className="text-sm text-gray-400">
-                      Choose your preferred payment method
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-green-400">
-                    <Shield size={18} />
-                    <span className="text-sm">100% Secure</span>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="flex flex-col items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer">
-                    <CreditCard size={24} className="mb-2" />
-                    <span className="text-sm">Credit Card</span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer">
-                    <CreditCard size={24} className="mb-2" />
-                    <span className="text-sm">Debit Card</span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer">
-                    <Smartphone size={24} className="mb-2" />
-                    <span className="text-sm">UPI</span>
-                  </div>
-                  <div className="flex flex-col items-center p-4 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer">
-                    <Wallet size={24} className="mb-2" />
-                    <span className="text-sm">Wallets</span>
-                  </div>
-                </div>
-
-                <p className="text-sm text-gray-400 text-center">
-                  * All payments are processed securely via Razorpay
-                </p>
-              </div>
               {/* Payment Status Alerts */}
               {paymentStatus === "processing" && (
                 <div className="bg-blue-900/20 border border-blue-800 rounded-xl p-6">
                   <div className="flex items-center gap-4">
                     <Loader className="w-8 h-8 animate-spin text-blue-400" />
                     <div>
-                      <h3 className="text-lg font-semibold">
-                        Processing Payment
-                      </h3>
-                      <p className="text-blue-300">
-                        Please wait while we process your payment...
-                      </p>
+                      <h3 className="text-lg font-semibold">Processing Payment</h3>
+                      <p className="text-blue-300">Please wait while we process your payment...</p>
                     </div>
                   </div>
                 </div>
               )}
+
               {paymentStatus === "failed" && (
                 <div className="bg-red-900/20 border border-red-800 rounded-xl p-6">
                   <div className="flex items-center gap-4">
                     <XCircle size={32} className="text-red-400" />
                     <div>
                       <h3 className="text-lg font-semibold">Payment Failed</h3>
-                      <p className="text-red-300">
-                        Your payment could not be processed. Please try again.
-                      </p>
+                      <p className="text-red-300">Your payment could not be processed. Please try again.</p>
                     </div>
                   </div>
                 </div>
               )}
-              {/* Action Buttons */}
-              {/* <div className="flex items-center justify-between pt-6 border-t border-white/10">
-                <button
-                  onClick={() => setStep(1)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
-                >
-                  <ChevronLeft size={20} />
-                  Back
-                </button>
 
-                <button
-                  onClick={handlePayment}
-                  className="flex items-center gap-2 px-8 py-3 rounded-xl font-medium bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 transition-all duration-300 hover:scale-105"
-                >
-                  <CheckCircle size={20} />
-                  Pay ₹{mentor.sessionPrice}
-                </button>
-              </div> */}
-              {/* //new one */}
+              {/* Action Buttons */}
               <div className="flex items-center justify-between pt-6 border-t border-white/10">
                 <button
                   onClick={() => setStep(1)}
@@ -811,164 +874,132 @@ const BookingModal = ({ mentor, onClose }) => {
                     ) : (
                       <>
                         <CheckCircle size={20} />
-                        Pay ₹{mentor.sessionPrice}
+                        Pay ₹{calculatePrice(duration)}
                       </>
                     )}
                   </button>
                 )}
               </div>
-              {/* // ADD this WHOLE NEW section after Step 2: */}
-              {/* STEP 3: Success/Failure */}
-              {step === 3 && (
-                <div className="space-y-6">
-                  {/* Success Card */}
-                  {paymentStatus === "success" && (
-                    <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-8 border border-green-500/20">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-6">
-                          <Check size={48} className="text-white" />
+            </div>
+          )}
+
+          {/* STEP 3: Success/Failure */}
+          {step === 3 && (
+            <div className="space-y-6">
+              {/* Success Card */}
+              {paymentStatus === "success" && (
+                <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-8 border border-green-500/20">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center mb-6">
+                      <Check size={48} className="text-white" />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold mb-3">🎉 Booking Confirmed!</h3>
+                    <p className="text-gray-300 mb-6">
+                      Your session with {mentor.name} has been successfully booked.
+                    </p>
+                    
+                    <div className="bg-white/5 rounded-xl p-6 w-full max-w-md">
+                      <div className="space-y-4">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Booking ID</span>
+                          <span className="font-mono font-semibold">{booking?._id?.slice(-8)}</span>
                         </div>
-
-                        <h3 className="text-2xl font-bold mb-3">
-                          🎉 Booking Confirmed!
-                        </h3>
-                        <p className="text-gray-300 mb-6">
-                          Your session with {mentor.name} has been successfully
-                          booked.
-                        </p>
-
-                        <div className="bg-white/5 rounded-xl p-6 w-full max-w-md">
-                          <div className="space-y-4">
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Booking ID</span>
-                              <span className="font-mono font-semibold">
-                                {booking?._id?.slice(-8)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Date & Time</span>
-                              <span className="font-semibold">
-                                {date} • {formatTime(selectedSlot?.startTime)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Amount Paid</span>
-                              <span className="font-bold text-green-400">
-                                ₹{mentor.sessionPrice}
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">
-                                Session Type
-                              </span>
-                              <span className="font-semibold">
-                                {mentor.serviceType === "ONE_TO_ONE"
-                                  ? "1:1 Video Call"
-                                  : "Resume Review"}
-                              </span>
-                            </div>
-                          </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Date & Time</span>
+                          <span className="font-semibold">
+                            {date}•{formatTime(selectedSlot?.startTime)}
+                          </span>
                         </div>
-
-                        <p className="text-sm text-gray-400 mt-6">
-                          A confirmation email has been sent to your registered
-                          email address.
-                        </p>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Amount Paid</span>
+                          <span className="font-bold text-green-400">₹{calculatePrice(duration)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Session Type</span>
+                          <span className="font-semibold">
+                            {mentor.serviceType === "Resume_Review" ?"Resume Review"  : "1:1 Video Call" }
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  )}
-
-                  {/* Failure Card */}
-                  {paymentStatus === "failed" && (
-                    <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-xl p-8 border border-red-500/20">
-                      <div className="flex flex-col items-center text-center">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-6">
-                          <XCircle size={48} className="text-white" />
-                        </div>
-
-                        <h3 className="text-2xl font-bold mb-3">
-                          ❌ Payment Failed
-                        </h3>
-                        <p className="text-gray-300 mb-6">
-                          We couldn't process your payment. Please try again or
-                          use a different payment method.
-                        </p>
-
-                        <div className="space-y-4 w-full max-w-md">
-                          <button
-                            onClick={handleRetryPayment}
-                            className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-105"
-                          >
-                            <RefreshCw size={20} className="inline mr-2" />
-                            Try Payment Again
-                          </button>
-
-                          <button
-                            onClick={handleNewBooking}
-                            className="w-full py-4 bg-white/10 hover:bg-white/20 rounded-xl font-medium transition-all duration-300 hover:scale-105"
-                          >
-                            Start New Booking
-                          </button>
-                        </div>
-
-                        <p className="text-sm text-gray-400 mt-6">
-                          Need help? Contact support@mentorconnect.com
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center justify-between pt-6 border-t border-white/10">
-                    {paymentStatus === "success" ? (
-                      <>
-                        <button
-                          onClick={onClose}
-                          className="px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
-                        >
-                          Close
-                        </button>
-                        <button
-                          onClick={() => {
-                            onClose();
-                            // You can add navigation here if needed
-                          }}
-                          className="px-8 py-3 rounded-xl font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105"
-                        >
-                          View My Bookings
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        onClick={() => setStep(1)}
-                        className="px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
-                      >
-                        Back to Calendar
-                      </button>
-                    )}
+                    
+                    <p className="text-sm text-gray-400 mt-6">
+                      A confirmation email has been sent to your registered email address.
+                    </p>
                   </div>
                 </div>
               )}
+
+              {/* Failure Card */}
+              {paymentStatus === "failed" && (
+                <div className="bg-gradient-to-r from-red-500/10 to-rose-500/10 rounded-xl p-8 border border-red-500/20">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-rose-500 flex items-center justify-center mb-6">
+                      <XCircle size={48} className="text-white" />
+                    </div>
+                    
+                    <h3 className="text-2xl font-bold mb-3">❌ Payment Failed</h3>
+                    <p className="text-gray-300 mb-6">
+                      We couldn't process your payment. Please try again or use a different payment method.
+                    </p>
+                    
+                    <div className="space-y-4 w-full max-w-md">
+                      <button
+                        onClick={handleRetryPayment}
+                        className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 rounded-xl font-bold text-lg transition-all duration-300 hover:scale-105"
+                      >
+                        <RefreshCw size={20} className="inline mr-2" />
+                        Try Payment Again
+                      </button>
+                      
+                      <button
+                        onClick={handleNewBooking}
+                        className="w-full py-4 bg-white/10 hover:bg-white/20 rounded-xl font-medium transition-all duration-300 hover:scale-105"
+                      >
+                        Start New Booking
+                      </button>
+                    </div>
+                    
+                    <p className="text-sm text-gray-400 mt-6">
+                      Need help? Contact support@mentorconnect.com
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                {paymentStatus === "success" ? (
+                  <>
+                    <button
+                      onClick={onClose}
+                      className="px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                    >
+                      Close
+                    </button>
+                    <button
+                      onClick={handleViewBookings}
+                      className="px-8 py-3 rounded-xl font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 hover:scale-105"
+                    >
+                      View My Bookings
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setStep(1)}
+                    className="px-6 py-3 rounded-xl font-medium bg-white/10 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                  >
+                    Back to Calendar
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-// Add these NEW functions after your existing functions:
-const handleRetryPayment = () => {
-  setPaymentStatus("pending");
-  handlePayment();
-};
-
-const handleNewBooking = () => {
-  setStep(1);
-  setBooking(null);
-  setPaymentStatus("pending");
-  setSelectedSlot(null);
-  setDate("");
 };
 
 export default BookingModal;

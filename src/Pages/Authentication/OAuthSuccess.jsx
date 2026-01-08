@@ -37,11 +37,11 @@ const OAuthSuccess = () => {
 
         // 🧑‍🏫 APPROVED MENTOR → mentor dashboard
         if (role === "MENTOR") {
-          navigate("/mentor/dashboard", { replace: true });
+          navigate("/mentor/bookings", { replace: true });
           return;
         }
         if(user.college && user.graduationYear){
-          navigate("/dashboard",{ replace: true });
+          navigate("/dashboard/MentorProfile",{ replace: true });
           return;
         }
 

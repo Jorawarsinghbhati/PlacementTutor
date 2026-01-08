@@ -1,58 +1,14 @@
 import User from "../../models/User.js";
-
-export const getAdminStats = async (req, res) => {
-  try {
-    console.log("Fetching admin stats");
-    // Total users
-    const totalUsers = await User.countDocuments();
-
-    // Total mentors
-    const totalMentors = await User.countDocuments({ role: "MENTOR" });
-
-    // Total admins
-    const totalAdmins = await User.countDocuments({ role: "ADMIN" });
-
-    // Unique colleges count
-    const colleges = await User.distinct("college", {
-      college: { $ne: null },
-    });
-
-    // New users in last 7 days
-    const last7Days = new Date();
-    last7Days.setDate(last7Days.getDate() - 7);
-
-    const newUsersLast7Days = await User.countDocuments({
-      createdAt: { $gte: last7Days },
-    });
-
-    res.json({
-      success: true,
-      stats: {
-        totalUsers,
-        totalMentors,
-        totalAdmins,
-        totalColleges: colleges.length,
-        newUsersLast7Days,
-      },
-    });
-  } catch (error) {
-    console.error("Admin stats error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch admin stats",
-    });
-  }
-};
 import Booking from "../../models/Booking.js";
+
 
 export const getAdminDashboardstats = async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-    const nowTime = new Date().toTimeString().slice(0, 5); // HH:mm
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    /* =======================
-       1️⃣ OVERVIEW STATS
-    ======================== */
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
     const [
       totalBookings,
@@ -64,275 +20,155 @@ export const getAdminDashboardstats = async (req, res) => {
 
       Booking.countDocuments({
         createdAt: {
-          $gte: new Date(`${today}T00:00:00.000Z`),
-          $lte: new Date(`${today}T23:59:59.999Z`)
-        }
+          $gte: todayStart,
+          $lte: todayEnd,
+        },
       }),
 
       User.countDocuments(),
 
-      // ✅ TOTAL REVENUE = COMPLETED SESSIONS ONLY
       Booking.aggregate([
         {
-          $lookup: {
-            from: "mentoravailabilities",
-            localField: "slot",
-            foreignField: "_id",
-            as: "slot"
-          }
-        },
-        { $unwind: "$slot" },
-        {
           $match: {
-            status: "CONFIRMED",
-            $or: [
-              { "slot.date": { $lt: today } },
-              {
-                "slot.date": today,
-                "slot.endTime": { $lte: nowTime }
-              }
-            ]
-          }
+            status: { $in: ["CONFIRMED", "COMPLETED"] }, 
+            paidAt: { $ne: null },
+          },
         },
         {
           $group: {
             _id: null,
-            totalRevenue: { $sum: "$amount" }
-          }
-        }
-      ])
+            totalRevenue: { $sum: "$amount" },
+          },
+        },
+      ]),
     ]);
 
     const totalRevenue = completedRevenueAgg[0]?.totalRevenue || 0;
 
-    /* =======================
-       2️⃣ MENTOR PERFORMANCE
-    ======================== */
-
-    const mentorPerformance = await Booking.aggregate([
-      {
-        $lookup: {
-          from: "mentoravailabilities",
-          localField: "slot",
-          foreignField: "_id",
-          as: "slot"
-        }
-      },
-      { $unwind: "$slot" },
-
-      {
-        $match: {
-          status: "CONFIRMED",
-          $or: [
-            { "slot.date": { $lt: today } },
-            {
-              "slot.date": today,
-              "slot.endTime": { $lte: nowTime }
-            }
-          ]
-        }
-      },
-
-      {
-        $group: {
-          _id: "$mentor",
-          completedSessions: { $sum: 1 },
-          totalRevenue: { $sum: "$amount" },
-          avgRating: { $avg: "$review.rating" } // safe even if review missing
-        }
-      },
-
-      {
-        $lookup: {
-          from: "users",
-          localField: "_id",
-          foreignField: "_id",
-          as: "mentor"
-        }
-      },
-      { $unwind: "$mentor" },
-
-      {
-        $project: {
-          mentorId: "$mentor._id",
-          mentorName: "$mentor.name",
-          mentorEmail: "$mentor.email",
-          completedSessions: 1,
-          totalRevenue: 1,
-          avgRating: {
-            $cond: [
-              { $gt: ["$avgRating", 0] },
-              { $round: ["$avgRating", 1] },
-              null
-            ]
-          }
-        }
-      },
-
-      { $sort: { totalRevenue: -1 } }
-    ]);
-
-    /* =======================
-       3️⃣ POPULAR TIME SLOT
-    ======================== */
-
-    const popularSlotAgg = await Booking.aggregate([
-      {
-        $lookup: {
-          from: "mentoravailabilities",
-          localField: "slot",
-          foreignField: "_id",
-          as: "slot"
-        }
-      },
-      { $unwind: "$slot" },
-    
-      {
-        $match: {
-          status: "CONFIRMED",
-          $or: [
-            { "slot.date": { $lt: today } },
-            {
-              "slot.date": today,
-              "slot.endTime": { $lte: nowTime }
-            }
-          ]
-        }
-      },
-    
-      {
-        $group: {
-          _id: {
-            startTime: "$slot.startTime",
-            endTime: "$slot.endTime"
-          },
-          bookingsCount: { $sum: 1 }
-        }
-      },
-    
-      { $sort: { bookingsCount: -1 } },
-      { $limit: 1 }
-    ]);
-
-    const popularTimeSlot = popularSlotAgg[0] || null;
-
-    /* =======================
-       FINAL RESPONSE
-    ======================== */
-
     res.status(200).json({
       success: true,
-      overview: {
+      val: {
         totalBookings,
         todaysBookings,
         totalRevenue,
-        totalUsers
+        totalUsers,
       },
-      mentorPerformance,
-      popularTimeSlot: popularTimeSlot? {
-        startTime: popularTimeSlot._id.startTime,
-        endTime: popularTimeSlot._id.endTime,
-        bookings: popularTimeSlot.bookingsCount,
-      }:null
     });
-
   } catch (error) {
     console.error("❌ Admin Dashboard Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to load admin dashboard"
+      message: "Failed to load admin dashboard",
     });
   }
 };
+
 export const getAllBookingsDetailed = async (req, res) => {
   try {
     const bookings = await Booking.aggregate([
-      // 🔗 Join slot (date & time)
+      /* --------------------------------
+         1️⃣ UNWIND slots (multi-slot support)
+      -------------------------------- */
+      { $unwind: "$slots" },
+
+      /* --------------------------------
+         2️⃣ SLOT DETAILS
+      -------------------------------- */
       {
         $lookup: {
           from: "mentoravailabilities",
-          localField: "slot",
+          localField: "slots",
           foreignField: "_id",
-          as: "slot"
-        }
+          as: "slot",
+        },
       },
       { $unwind: "$slot" },
 
-      // 🔗 Join user (who booked)
+      /* --------------------------------
+         3️⃣ USER DETAILS
+      -------------------------------- */
       {
         $lookup: {
           from: "users",
           localField: "user",
           foreignField: "_id",
-          as: "user"
-        }
+          as: "user",
+        },
       },
       { $unwind: "$user" },
 
-      // 🔗 Join mentor (who is mentoring)
+      /* --------------------------------
+         4️⃣ MENTOR DETAILS
+      -------------------------------- */
       {
         $lookup: {
           from: "users",
           localField: "mentor",
           foreignField: "_id",
-          as: "mentor"
-        }
+          as: "mentor",
+        },
       },
       { $unwind: "$mentor" },
 
-      // 🎯 Final response shape
+      /* --------------------------------
+         5️⃣ GROUP BACK → 1 BOOKING = 1 ROW
+      -------------------------------- */
       {
-        $project: {
-          bookingId: "$_id",
+        $group: {
+          _id: "$_id",
+
+          bookingId: { $first: "$_id" },
 
           // User
-          userId: "$user._id",
-          userName: "$user.name",
-          userEmail: "$user.email",
+          userId: { $first: "$user._id" },
+          userName: { $first: "$user.name" },
+          userEmail: { $first: "$user.email" },
 
           // Mentor
-          mentorId: "$mentor._id",
-          mentorName: "$mentor.name",
-          mentorEmail: "$mentor.email",
+          mentorId: { $first: "$mentor._id" },
+          mentorName: { $first: "$mentor.name" },
+          mentorEmail: { $first: "$mentor.email" },
 
-          // Slot info
-          date: "$slot.date",
-          startTime: "$slot.startTime",
-          endTime: "$slot.endTime",
+          // Slot timing (important)
+          date: { $first: "$slot.date" },
+          startTime: { $min: "$slot.startTime" },
+          endTime: { $max: "$slot.endTime" },
 
           // Booking info
-          status: 1,
-          serviceType: 1,
-          amount: 1,
-          createdAt: 1,
+          status: { $first: "$status" },
+          serviceType: { $first: "$serviceType" },
+          amount: { $first: "$amount" },
+          duration: { $first: "$duration" },
+          createdAt: { $first: "$createdAt" },
 
           // Review (optional)
-          review: {
-            rating: "$review.rating",
-            comment: "$review.comment",
-            reviewedAt: "$review.reviewedAt"
-          }
-        }
+          review: { $first: "$review" },
+
+          // Reschedule (admin visibility)
+          rescheduleRequest: { $first: "$rescheduleRequest" },
+        },
       },
 
-      // 🧾 Latest bookings first
-      { $sort: { createdAt: -1 } }
+      /* --------------------------------
+         6️⃣ SORT (Latest first)
+      -------------------------------- */
+      { $sort: { createdAt: -1 } },
     ]);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings
+      data: bookings,
     });
-
   } catch (error) {
-    console.error("Fetch bookings error:", error);
-    res.status(500).json({
+    console.error("❌ getAllBookingsDetailed error:", error);
+    return res.status(500).json({
       success: false,
-      message: "Failed to fetch bookings"
+      message: "Failed to fetch bookings",
     });
   }
 };
+
 export const getAllUsersDetailed = async (req, res) => {
   try {
     const users = await User.find({ role: "USER" }) // ✅ only users
@@ -340,11 +176,11 @@ export const getAllUsersDetailed = async (req, res) => {
         " email username phone college graduationYear createdAt"
       )
       .sort({ createdAt: -1 });
-
+    console.log(users);
     res.status(200).json({
       success: true,
       count: users.length,
-      data: users
+      val: users
     });
 
   } catch (error) {
@@ -352,6 +188,124 @@ export const getAllUsersDetailed = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch users"
+    });
+  }
+};
+
+export const deleteUserByAdmin = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`Attempting to delete user with ID: ${userId}`);
+    // 1️⃣ Check user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // ❌ Prevent deleting admins
+    if (user.role === "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Admin account cannot be deleted",
+      });
+    }
+
+    // 2️⃣ Optional: block deletion if active bookings exist
+    const activeBookings = await Booking.countDocuments({
+      user: userId,
+      status: { $in: ["CONFIRMED", "PAYMENT_PENDING"] },
+    });
+
+    if (activeBookings > 0) {
+      return res.status(400).json({
+        success: false,
+        message: "User has active bookings, cannot delete",
+      });
+    }
+
+    // 3️⃣ Delete user
+    await User.findByIdAndDelete(userId);
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+
+  } catch (error) {
+    console.error("Delete user error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete user",
+    });
+  }
+};
+export const getPopularTimeSlot = async (req, res) => {
+  try {
+    const popularSlotAgg = await Booking.aggregate([
+      // only valid bookings
+      {
+        $match: {
+          status: { $in: ["CONFIRMED", "COMPLETED"] },
+        },
+      },
+
+      // each booking may have multiple slots
+      { $unwind: "$slots" },
+
+      // join slot details
+      {
+        $lookup: {
+          from: "mentoravailabilities",
+          localField: "slots",
+          foreignField: "_id",
+          as: "slot",
+        },
+      },
+      { $unwind: "$slot" },
+
+      // group by time slot
+      {
+        $group: {
+          _id: {
+            startTime: "$slot.startTime",
+            endTime: "$slot.endTime",
+          },
+          totalBookings: { $sum: 1 },
+        },
+      },
+
+      // most popular first
+      { $sort: { totalBookings: -1 } },
+
+      // only top 1
+      { $limit: 1 },
+    ]);
+
+    if (!popularSlotAgg.length) {
+      return res.status(200).json({
+        success: true,
+        popularTimeSlot: null,
+      });
+    }
+
+    const slot = popularSlotAgg[0];
+
+    res.status(200).json({
+      success: true,
+      popularTimeSlot: {
+        startTime: slot._id.startTime,
+        endTime: slot._id.endTime,
+        bookings: slot.totalBookings,
+      },
+    });
+  } catch (error) {
+    console.error("❌ Popular Time Slot Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch popular time slot",
     });
   }
 };

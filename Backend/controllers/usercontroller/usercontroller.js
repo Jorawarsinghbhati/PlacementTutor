@@ -95,7 +95,7 @@ export const getMyProfile = async (req, res) => {
     const userId = req.user.id;
 
     const user = await User.findById(userId).select(
-      "name  username college graduationYear phone role  createdAt"
+      " email name  username college graduationYear phone role  createdAt"
     );
 
     if (!user) {

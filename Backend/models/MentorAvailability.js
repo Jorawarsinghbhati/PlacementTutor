@@ -39,6 +39,20 @@ const mentorAvailabilitySchema = new mongoose.Schema(
       ref: "Booking",
       default: null,
     },
+    minDuration: {
+      type: Number,
+      default: 15, // Minimum booking duration in minutes
+    },
+    blockedByAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    adminBlockReason: {
+      type: String,
+    },
+    adminBlockedUntil: {
+      type: Date, // optional (temporary block)
+    },
   
   },
   {
