@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5178";
+const BASE_URL = "https://placementtutor-1.onrender.com";
 
 export const authEndpoints = {
   // 🔹 Google OAuth
